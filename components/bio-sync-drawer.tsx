@@ -27,7 +27,7 @@ const luxuryEase = [0.16, 1, 0.3, 1] as [number, number, number, number];
 // --- Component ---
 
 export function BioSyncDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-    const { profile, updateBiometrics, toggleGoal, addConstraint, removeConstraint } = useUserProfile();
+    const { profile, updateBiometrics, toggleGoal, addConstraint, removeConstraint, resetProfile } = useUserProfile();
 
     // Local state for form
     const [localBio, setLocalBio] = useState({
@@ -296,12 +296,18 @@ export function BioSyncDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: (
                         </div>
 
                         {/* Footer */}
-                        <div className="sticky bottom-0 bg-[#0A0A0F]/90 backdrop-blur-md p-6 border-t border-white/5">
+                        <div className="sticky bottom-0 bg-[#0A0A0F]/90 backdrop-blur-md p-6 border-t border-white/5 space-y-3">
                             <button
                                 onClick={handleSave}
                                 className="w-full py-4 bg-gradient-to-r from-amber-600/20 to-amber-500/20 border border-amber-500/30 text-amber-500 font-medium rounded-xl hover:bg-amber-500/30 transition-all tracking-widest uppercase text-sm"
                             >
                                 Save & Close
+                            </button>
+                            <button
+                                onClick={() => { resetProfile(); onClose(); }}
+                                className="w-full py-2 text-[10px] text-white/20 hover:text-red-400 uppercase tracking-widest transition-colors font-mono"
+                            >
+                                Reset Profile Data
                             </button>
                         </div>
                     </motion.div>

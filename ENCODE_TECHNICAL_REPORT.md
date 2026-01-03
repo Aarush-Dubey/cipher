@@ -1,16 +1,17 @@
 # ENCODE: Technical Product Report
-**Version 2.0** | Last Updated: January 2026
+**Version 2.1** | Last Updated: January 2026
 
 ---
 
 ## 1. Executive Summary
 
-**ENCODE** is an AI-native consumer health platform that transforms complex nutritional science into personalized, actionable intelligence. The application features a **"Futuristic Premium Health"** aesthetic with deep obsidian backgrounds, champagne gold accents, and fluid animations.
+**CIPHER** is an AI-native consumer health platform that transforms complex nutritional science into personalized, actionable intelligence. The application features a **"Futuristic Premium Health"** aesthetic with deep obsidian backgrounds, champagne gold accents, and fluid animations.
 
 ### Core Philosophy
-- **Zero-UI Analysis**: Users input a product name (or scan/paste ingredients) and receive a dynamically generated, personalized health dashboard
-- **Polymorphic Interface**: The UI morphs based on user intent—the same chat input can render 5+ different component types
-- **Personalized Health Guardian**: All analyses are tailored to the user's biometrics, goals, allergies, and health conditions
+- **Zero-UI Analysis**: Users input a product name (or scan/paste ingredients) and receive a dynamically generated, personalized health dashboard.
+- **Polymorphic Interface**: The UI morphs based on user intent—the same chat input can render 10+ different component types depending on the context.
+- **Personalized Health Guardian**: All analyses are tailored to the user's biometrics, goals, allergies, and health conditions.
+- **Cinematic Autopilot**: A fully choreographed "Royal Demo" mode that showcases the platform's capabilities without user intervention.
 
 ---
 
@@ -25,7 +26,7 @@
 | **Styling** | Tailwind CSS v4 + Custom Design System |
 | **Animations** | Framer Motion (Luxury Easing Curves) |
 | **UI Components** | Shadcn/UI (Radix Primitives) + Custom Generative UI Library |
-| **State Management** | React Context (UserProfile) + Local State |
+| **State Management** | React Context (UserProfile, DemoController) + Local State |
 | **AI Provider** | Groq Cloud API |
 | **AI Model** | `llama-3.3-70b-versatile` (sub-second inference) |
 | **SDK** | `groq-sdk` |
@@ -36,23 +37,32 @@
 encode/
 ├── app/
 │   ├── page.tsx                    # Main orchestrator (Triage Protocol)
-│   ├── layout.tsx                  # Root layout + ProfileProvider
+│   ├── layout.tsx                  # Root layout + Providers
 │   ├── globals.css                 # Aurora Design System
 │   └── api/
-│       ├── analyze/route.ts        # Initial product analysis endpoint
+│       ├── agent/
+│       │   └── triage/route.ts     # Multi-step agentic analysis flow
+│       ├── analyze/route.ts        # Product analysis endpoint
 │       └── chat/route.ts           # Intent Router + Chat endpoint
 ├── components/
+│   ├── generative/                 # The Generative UI Library
+│   │   ├── battle-card.tsx         # Head-to-head product comparison
+│   │   ├── compliance-matrix.tsx   # Diet/Allergy check visualization
+│   │   ├── manufacturing-timeline.tsx # Farm-to-Table process flow
+│   │   ├── nutrient-radar.tsx      # SVG Radar chart for macro balance
+│   │   ├── toxicity-gauge.tsx      # Visual risk assessment
+│   │   └── ... (see section 4)
 │   ├── input-hero.tsx              # Zero-UI landing (Omni-Input)
 │   ├── generative-result.tsx       # Chat feed + Dashboard renderer
-│   ├── generative-ui-patterns.tsx  # Polymorphic component factory
-│   ├── health-intelligence-dashboard.tsx  # Simulation Engine UI
 │   ├── bio-sync-drawer.tsx         # Profile settings drawer
-│   ├── bio-initialization-ritual.tsx  # Luxury onboarding flow
-│   └── technical-report-view.tsx   # Debug/report view
+│   ├── bio-initialization-ritual.tsx # Luxury onboarding flow
+│   └── royal-autopilot-demo.tsx    # Cinematic demo overlay system
 ├── context/
-│   └── user-profile-context.tsx    # Global profile state + calculations
+│   ├── user-profile-context.tsx    # Global profile state + calculations
+│   └── demo-controller.tsx         # Scripted demo state machine
 ├── hooks/
-│   └── use-triage-protocol.ts      # State machine for app flow
+│   ├── use-triage-protocol.ts      # State machine for app flow
+│   └── use-demo-controller.tsx     # Demo phase orchestration
 ├── lib/
 │   ├── utils.ts                    # Utility functions (cn)
 │   └── data.ts                     # Mock data + constants
@@ -68,44 +78,23 @@ encode/
 
 | Flow | Entry Point | Description |
 |------|-------------|-------------|
-| **Zero-UI Analysis** | `InputHero` | Minimalist landing with pulsating orb and Omni-Input |
-| **Bio-Initialization Ritual** | Auto-triggered on first scan | 5-screen luxury onboarding sequence |
-| **Generative Dashboard** | `GenerativeResult` | AI-synthesized product analysis with simulation engine |
-| **Polymorphic Chat** | Chat input in feed | Intent-aware responses with dynamic UI components |
-| **Profile Management** | `BioSyncDrawer` | Settings panel for biometrics, goals, and constraints |
+| **Zero-UI Analysis** | `InputHero` | Minimalist landing with pulsating orb and Omni-Input. |
+| **Bio-Initialization Ritual** | Auto-triggered | 5-screen luxury onboarding sequence to calibrate user biometrics. |
+| **Generative Dashboard** | `GenerativeResult` | AI-synthesized product analysis with simulation engine. |
+| **Polymorphic Chat** | Chat Input | Intent-aware responses using the extensive Generative UI library. |
+| **Royal Autopilot Demo** | "`Show Me`" Button | A scripted, cinematic tour of the app's features with ghost-interactions. |
 
 ### 3.2 User Profile System
 
-#### Context: `user-profile-context.tsx`
-
-**Stored Data:**
-```typescript
-interface UserProfile {
-    biometrics: {
-        weight_kg: number;
-        height_cm: number;
-        age: number;
-        sex: "male" | "female" | "other";
-    };
-    goals: string[];        // ["fat_loss", "muscle_gain", "heart_health", "maintain"]
-    constraints: {
-        allergies: string[];  // ["Peanuts", "Gluten", ...]
-        diet: string[];       // ["Keto", "Vegan", "Low Sodium", ...]
-        conditions: string[]; // ["Hypertension", "Diabetes (Type 2)", ...]
-    };
-    // Auto-Calculated
-    bmr: number;            // Basal Metabolic Rate (Mifflin-St Jeor)
-    bmi: number;            // Body Mass Index
-    dailySodiumCap: number; // 2300mg standard, 1500mg for hypertension/heart_health
-    dailyCalories: number;  // TDEE based on BMR + goal modifier
-}
-```
+**Stored Data (`UserProfile`):**
+- **Biometrics**: Height, Weight, Age, Sex calculations (BMI, BMR).
+- **Goals**: "Muscle Gain", "Fat Loss", "Heart Health", etc.
+- **Constraints**: Allergies, Diets (Keto, Vegan), Medical Conditions.
+- **Derived Metrics**: Daily Sodium Cap (dynamic based on condition), Caloric Needs.
 
 **Personalization Logic:**
-- Profile data is sent to `/api/analyze` for personalized scoring
-- Allergen detection triggers `ConflictGuard` banner
-- Heart health goal automatically reduces sodium cap to 1500mg
-- AI prompts include profile constraints for biased analysis
+- **ConflictGuard**: Automatically flags ingredients that violate specific user constraints (e.g., Peanuts for allergy, High Sodium for Hypertension).
+- **Goal Alignment**: Scores products based on how well they fit the user's specific fitness goals.
 
 ---
 
@@ -113,66 +102,55 @@ interface UserProfile {
 
 ### 4.1 Component Factory Pattern
 
-The application uses a **Polymorphic Component Factory** (`generative-ui-patterns.tsx`) to dynamically render React components based on AI response type.
+The application uses a **Polymorphic Component Factory** to dynamically render React components based on AI response type. The AI determines the best way to visualize information and returns a component type.
 
-### 4.2 Available UI Components
+### 4.2 Expanded Component Library (`components/generative/`)
 
-#### A. Context-Aware AI Components (Intent-Based)
+| Component | Trigger Context | Visual Description |
+|-----------|-----------------|---------------------|
+| `compliance_matrix` | "Is this keto?", "Allergies?" | Grid of checks/crosses for diet & allergy safety. |
+| `battle_card` | "Compare to X", "vs Y" | Split-screen VS card comparing macros and health score. |
+| `manufacturing_timeline` | "How is it made?", "Process" | Horizontal flow showing sourcing, processing, and packaging steps. |
+| `toxicity_gauge` | "Is it safe?", "Additives" | Semi-circle gauge showing risk levels of specific ingredients. |
+| `nutrient_radar` | General Analysis | Spider chart visualizing protein/fat/carb/sodium balance. |
+| `eco_impact` | "Environment", "Sustainable" | Visualization of carbon footprint, water usage, and packaging. |
+| `better_swap` | "Healthier alternative" | Recommendation card for a better product match. |
+| `molecular_lens` | "Ingredient detail" | Deep dive into a specific chemical compound. |
+| `energy_wave` | "Caffeine", "Energy" | Graph showing energy release over time (crash vs sustained). |
+| `truth_terminal` | "Marketing claims" | Analysis of package claims vs nutritional reality. |
 
-| Component | Trigger Keywords | Visual Description |
-|-----------|------------------|---------------------|
-| `compliance_checklist` | "keto", "vegan", "gluten", "diet" | Animated checklist with ✅❌⚠️ badges and expandable reasons |
-| `comparison_card` | "compare", "better", "vs", "versus" | Split-screen VS card with gradient winners and stat comparison |
-| `process_timeline` | "how", "made", "process", "farm" | Horizontal timeline showing manufacturing stages (Farm→Factory→Plate) |
-| `product_carousel` | "swap", "alternative", "instead" | 3-card horizontal carousel with health scores and match percentages |
-| `ingredient_deep_dive` | "what is", "ingredient", "chemical" | Periodic-table style grid with molecular data, functions, and safety |
-
-#### B. Legacy/Fallback Components
-
-| Component | Purpose |
-|-----------|---------|
-| `safety_gauge` | Semi-circle gauge for toxicity levels |
-| `regulatory_map` | Geographic legality visualization |
-| `energy_graph` | Caffeine/energy curve over time |
-| `truth_scanner` | Marketing claim verification |
-| `molecular_view` | Chemical structure visualization |
-| `text` | Plain AI text response |
-
-### 4.3 Component Rendering Flow
+### 4.3 Rendering Flow
 
 ```
-User Query → /api/chat → Intent Classification (Keyword-Based)
-                              ↓
-                      Generate Component JSON
-                              ↓
-              { type: "compliance_checklist", data: {...} }
-                              ↓
-         GenerativeUIPattern → Switch(type) → <ComplianceAuditor />
+User Query → /api/chat → Intent Classification
+                               ↓
+                      Select Visual Metaphor
+                               ↓
+              { type: "manufacturing_timeline", data: {...} }
+                               ↓
+         GenerativeUIPattern → <ManufacturingTimeline data={...} />
 ```
 
 ---
 
-## 5. Bio-Initialization Ritual
+## 5. Royal Autopilot Demo System
 
-A **5-screen luxury onboarding sequence** that triggers when a user with an empty profile attempts their first scan.
+A specialized system designed to demonstrate the platform's capabilities without user input. It uses a **Ghost Interaction Engine** to simulate mouse movements, clicks, and typing.
 
-### 5.1 Screen Breakdown
+### 5.1 Architecture (`use-demo-controller.tsx`)
 
-| Screen | Name | Elements |
-|--------|------|----------|
-| **1** | The Greeting | Welcome message, golden orb, "Begin Calibration" button |
-| **2** | The Metrics | Height/Weight dial controls, live BMI calculation |
-| **3** | The Constraints | Allergen chip selection, "Shield" list |
-| **4** | The Ambition | 4 goal cards with gradient overlays |
-| **5** | The Synthesis | Golden ring animation, data stream, "Continue to Analysis" button |
-
-### 5.2 Design Language
-
-- **Background**: Deep Obsidian (`#050A14`)
-- **Accents**: Champagne Gold (`#D4AF37`)
-- **Typography**: Serif headings, Monospace data
-- **Micro-typography**: Spaced uppercase labels (`S T E P  0 1`)
-- **Easing**: Luxury cubic-bezier `[0.16, 1, 0.3, 1]`
+- **Script-Driven**: Defined by a chronological array of `DemoAction` objects.
+- **Ghost Actions**:
+    - `ghost_move`: Smoothly animates a cursor to a target DOM element.
+    - `ghost_click`: Simulates a click event and visual ripple.
+    - `ghost_type`: Types text into input fields character-by-character.
+- **Director Mode**: Overlays "Director's Commentary" explaining the system's actions.
+- **Phase Control**: Allows skipping between defined chapters:
+    1. **The Cold Start**: Unprofiled query execution.
+    2. **The Gate**: System refuses to analyze without context.
+    3. **The Ritual**: Automated profile creation.
+    4. **Auto-Retry**: Rerunning the query with new context.
+    5. **Cross-Examination**: Showcasing dynamic UI (Timeline, Battle Card).
 
 ---
 
@@ -180,182 +158,59 @@ A **5-screen luxury onboarding sequence** that triggers when a user with an empt
 
 ### 6.1 Simulation Engine
 
-The dashboard includes an interactive **"What If" Simulator** for Recipe Hacking.
+The dashboard includes an interactive **"What If" Simulator** for Recipe Hacking. Users can toggle modifications ("Drain Noodles", "Skip Packet") to see real-time updates to the Health Score and Sodium levels.
 
-**Schema:**
+### 6.2 Data Model
+
 ```typescript
 interface SimulationData {
-    base_stats: {
-        score: number;
-        calories: number;
-        sodium_mg: number;
-        protein_g: number;
-        carbs_g: number;
-        fat_g: number;
-    };
+    base_stats: { score: number; calories: number; sodium_mg: number; ... };
     modifiers: Array<{
         id: string;
-        label: string;        // "Drain Noodles"
+        label: string;
         active: boolean;
-        impact: {
-            score_delta: number;
-            sodium_mg?: number;
-            fat_g?: number;
-            // ...other deltas
-        };
+        impact: { score_delta: number; sodium_mg: number; ... };
     }>;
-    verdicts: {
-        default: string;      // "Poor Choice"
-        improved: string;     // "Acceptable"
-        optimized: string;    // "Healthier Option"
-    };
+    verdicts: { default: string; improved: string; optimized: string; };
 }
 ```
-
-### 6.2 Dashboard Components
-
-- **Hero Score Ring**: SVG donut with animated fill
-- **Modifier Toggles**: Interactive "Recipe Hacks"
-- **Stat Grid**: Real-time stat updates based on modifiers
-- **Verdict Badge**: Dynamic recommendation based on state
 
 ---
 
 ## 7. API Endpoints
 
-### 7.1 `/api/analyze` (POST)
+### 7.1 `/api/agent/triage`
+**Purpose**: The primary entry point for complex analysis. It orchestrates the multi-step reasoning process (Search identifying, Ingredient breakdown, Health Scoring).
 
-**Purpose**: Generate initial AI analysis for a product.
+### 7.2 `/api/analyze`
+**Purpose**: Quick-response product analysis. Accepts `userProfile` and `query` to return `HealthDashboardData`.
 
-**Request:**
-```json
-{
-    "query": "Spicy Ramen",
-    "userContext": "I'm on a low sodium diet",
-    "userProfile": {
-        "goals": ["heart_health"],
-        "constraints": {
-            "allergies": ["Peanuts"],
-            "conditions": ["Hypertension"]
-        },
-        "dailySodiumCap": 1500
-    }
-}
-```
-
-**Response:** Full `HealthDashboardData` JSON including `meta`, `simulation`, and component data.
-
-### 7.2 `/api/chat` (POST)
-
-**Purpose**: Intent Router for follow-up questions.
-
-**Request:**
-```json
-{
-    "message": "Is this keto friendly?",
-    "product": "Spicy Ramen",
-    "ingredients": ["Wheat Noodles", "MSG", "Palm Oil"]
-}
-```
-
-**Response:**
-```json
-{
-    "summary": "No, this is not keto. The wheat noodles contain 60g of carbs per serving.",
-    "component": {
-        "type": "compliance_checklist",
-        "data": {
-            "title": "Keto Compliance",
-            "checks": [
-                { "label": "Net Carbs < 20g", "status": "fail", "value": "60g", "reason": "Wheat noodles" },
-                { "label": "No Added Sugar", "status": "pass" },
-                { "label": "High Fat Ratio", "status": "warning", "reason": "Not balanced" }
-            ]
-        }
-    }
-}
-```
+### 7.3 `/api/chat`
+**Purpose**: Conversational specialized agent. handles follow-up questions and determines which "Generative UI" component to render next.
 
 ---
 
-## 8. Design System
+## 8. Design System ("Aurora")
 
-### 8.1 Color Palette (Dark Mode)
+### 8.1 Visual Language
+- **Background**: `oklch(0.08 0.01 260)` (Deep Obsidian)
+- **Primary**: `oklch(0.75 0.18 160)` (Aurora Teal)
+- **Accent**: `oklch(0.65 0.15 280)` (Deep Purple)
+- **Glassmorphism**: Heavy use of `backdrop-blur-md` and white/10 borders.
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--background` | `oklch(0.08 0.01 260)` | Page background |
-| `--card` | `oklch(0.12 0.015 260)` | Card surfaces |
-| `--primary` | `oklch(0.75 0.18 160)` | Aurora teal accent |
-| `--accent` | `oklch(0.65 0.15 280)` | Secondary purple |
-| `--destructive` | `oklch(0.55 0.22 25)` | Error/danger states |
-
-### 8.2 Animation Tokens
-
-```typescript
-const luxuryEase = [0.16, 1, 0.3, 1] as [number, number, number, number];
-
-// Standard transitions
-const fadeIn = { opacity: 0 → 1, duration: 0.8 };
-const blurExit = { opacity: 0, filter: "blur(20px)" };
-const springy = { type: "spring", damping: 25, stiffness: 200 };
-```
+### 8.2 Animation
+- **Orchestration**: `Framer Motion` used for all entry/exit animations.
+- **Curve**: Custom "Luxury Ease" `[0.16, 1, 0.3, 1]` for premium feel.
 
 ---
 
-## 9. Error Handling & Fallbacks
+## 9. Future Roadmap
 
-| Scenario | Behavior |
-|----------|----------|
-| API Timeout | Show cached mock data or "System Offline" dashboard |
-| Invalid JSON from AI | Fallback to text-only response |
-| Missing Profile | Trigger Bio-Initialization Ritual |
-| Allergen Detected | Render `ConflictGuard` banner |
-| Unknown UI Type | Render placeholder widget |
-
----
-
-## 10. Environment Variables
-
-```env
-GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx
-```
-
----
-
-## 11. Future Roadmap
-
-- [ ] **Barcode Scanning**: Camera-based UPC lookup
-- [ ] **Voice Input**: Whisper-based transcription
-- [ ] **Profile Sync**: Cloud persistence with auth
-- [ ] **Meal Logging**: Track daily intake against goals
-- [ ] **Social Sharing**: Export analysis as shareable cards
-- [ ] **Multi-Language**: i18n support for prompts and UI
-
----
-
-## 12. Component Reference
-
-### Quick Import Map
-
-```typescript
-// Core UI
-import { InputHero } from "@/components/input-hero";
-import { GenerativeResult } from "@/components/generative-result";
-import { HealthIntelligenceDashboard } from "@/components/health-intelligence-dashboard";
-
-// Generative UI
-import { GenerativeUIPattern } from "@/components/generative-ui-patterns";
-// Renders: ComplianceAuditor, ComparisonCard, ProcessTimeline, SwapCarousel, IngredientDeepDive
-
-// Profile System
-import { ProfileProvider, useUserProfile } from "@/context/user-profile-context";
-import { BioAvatarButton, BioSyncDrawer, ConflictGuard } from "@/components/bio-sync-drawer";
-import { BioInitializationRitual } from "@/components/bio-initialization-ritual";
-
-// Hooks
-import { useTriageProtocol } from "@/hooks/use-triage-protocol";
-```
+- [ ] **Vision API Integration**: Scanning physical barcodes/labels via camera.
+- [ ] **Voice-to-SQL**: Natural language querying of nutrition databases.
+- [ ] **Wearable Sync**: Import real-time biometric data (Apple Health/Oura).
+- [ ] **Social Leaderboards**: Gamified health scores vs friends.
+- [ ] **Instacart Integration**: One-click ordering of "Better Swaps".
 
 ---
 

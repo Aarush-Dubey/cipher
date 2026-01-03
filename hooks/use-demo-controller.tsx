@@ -17,6 +17,8 @@ export type DemoAction =
     | { type: "complete_ritual" }
     | { type: "retry_query"; query: string }
     | { type: "show_mock_result" }
+    | { type: "show_manufacturing" }
+    | { type: "show_battle" }
     | { type: "highlight"; target: string; duration?: number }
     | { type: "end_demo" };
 
@@ -55,7 +57,21 @@ export const DEMO_MOCK_RESULT = {
     }
 };
 
-// --- The Full Choreographed Script (v4.0) ---
+export const DEMO_MOCK_MFG = [
+    { order: 1, title: "Wheat Harvest", description: "Hard winter wheat harvested in Kansas.", icon: "Wheat", status: "completed" },
+    { order: 2, title: "Milling", description: "Processed into refined flour (bran removed).", icon: "Factory", status: "completed" },
+    { order: 3, title: "Flash Frying", description: "Deep fried in palm oil at 180°C for shelf stability.", icon: "Flame", status: "warning" },
+    { order: 4, title: "Seasoning", description: "MSG and artificial flavors added via spray.", icon: "FlaskConical", status: "warning" },
+    { order: 5, title: "Packaging", description: "Sealed in plastic-lined Styrofoam cup.", icon: "Package", status: "completed" }
+];
+
+export const DEMO_MOCK_BATTLE = {
+    productA: { name: "Instant Ramen", protein: "5g", sodium: "1800mg" },
+    productB: { name: "Protein Pasta", protein: "24g", sodium: "120mg" },
+    verdict: "Protein Pasta is the superior fuel source for muscle gain."
+};
+
+// --- The Full Choreographed Script (v4.5 - Polymorphic) ---
 
 const DEMO_SCRIPT: DemoStep[] = [
     // === PHASE 0: WELCOME (0-5s) ===
@@ -98,14 +114,27 @@ const DEMO_SCRIPT: DemoStep[] = [
     { time: 65000, phase: 5, action: { type: "director_voice", text: "The verdict: Score 32. High sodium, low protein. Not ideal for muscle recovery." } },
     { time: 70000, phase: 5, action: { type: "highlight", target: "#score-ring", duration: 4000 } },
     { time: 73000, phase: 5, action: { type: "show_intent", text: "STATUS: Mismatch Detected - High Sodium / Low Protein", duration: 4000 } },
-    { time: 78000, phase: 5, action: { type: "director_voice", text: "But CIPHER doesn't just judge—it helps you optimize with the Simulation Engine." } },
 
-    // === PHASE 6: HANDOVER (90s+) ===
-    { time: 85000, phase: 6, action: { type: "director_voice", text: "System handover complete. The control is yours. Ready to encode?" } },
-    { time: 90000, phase: 6, action: { type: "end_demo" } },
+    // === NEW PHASE 6: CROSS-EXAMINATION - MANUFACTURING (90-105s) ===
+    { time: 78000, phase: 6, action: { type: "ghost_type", target: "#demo-input", text: "How is this made?", speed: 60 } },
+    { time: 79500, phase: 6, action: { type: "ghost_click", target: "#demo-send-btn" } },
+    { time: 80000, phase: 6, action: { type: "show_manufacturing" } },
+    { time: 80500, phase: 6, action: { type: "director_voice", text: "CIPHER is fluid. Ask 'How is this made?' and the interface shapeshifts into a manufacturing timeline." } },
+    { time: 80500, phase: 6, action: { type: "show_intent", text: "INTENT: Manufacturing/Traceability Analysis", duration: 3000 } },
+
+    // === NEW PHASE 7: CROSS-EXAMINATION - BATTLE (105-120s) ===
+    { time: 88000, phase: 7, action: { type: "ghost_type", target: "#demo-input", text: "Is pasta better for me?", speed: 60 } },
+    { time: 89500, phase: 7, action: { type: "ghost_click", target: "#demo-send-btn" } },
+    { time: 90000, phase: 7, action: { type: "show_battle" } },
+    { time: 90500, phase: 7, action: { type: "director_voice", text: "Ask for a comparison, and it becomes a Head-to-Head Battle Card." } },
+    { time: 90500, phase: 7, action: { type: "show_intent", text: "INTENT: Comparative Analysis (vs Pasta)", duration: 3000 } },
+
+    // === PHASE 8: HANDOVER (120s+) ===
+    { time: 98000, phase: 8, action: { type: "director_voice", text: "System handover complete. The control is yours. Ready to encode?" } },
+    { time: 103000, phase: 8, action: { type: "end_demo" } },
 ];
 
-const PHASES = ["Welcome", "Cold Start", "The Gate", "Ritual", "Auto-Retry", "Verdict", "Handover"];
+const PHASES = ["Welcome", "Cold Start", "The Gate", "Ritual", "Auto-Retry", "Verdict", "Timeline", "Battle", "Handover"];
 
 // --- State Management ---
 
@@ -122,6 +151,8 @@ interface DemoState {
     showGate: boolean;
     showRitual: boolean;
     showMockResult: boolean;
+    showManufacturing: boolean;
+    showBattle: boolean;
     pendingQuery: string | null;
     profileData: {
         height: number;
@@ -130,14 +161,18 @@ interface DemoState {
         allergies: string[];
         goals: string[];
     };
+    timeScale: number;
 }
 
 interface DemoContextType extends DemoState {
     startDemo: () => void;
     stopDemo: () => void;
     skipToPhase: (phase: number) => void;
+    setTimeScale: (speed: number) => void;
     phases: string[];
     mockResult: typeof DEMO_MOCK_RESULT;
+    mockMfg: typeof DEMO_MOCK_MFG;
+    mockBattle: typeof DEMO_MOCK_BATTLE;
 }
 
 const DemoContext = createContext<DemoContextType | null>(null);
@@ -157,13 +192,18 @@ export function useDemoController(): DemoContextType {
             showGate: false,
             showRitual: false,
             showMockResult: false,
+            showManufacturing: false,
+            showBattle: false,
             pendingQuery: null,
             profileData: { height: 170, weight: 70, age: 25, allergies: [], goals: [] },
             startDemo: () => console.warn("DemoProvider not found"),
             stopDemo: () => { },
             skipToPhase: () => { },
             phases: PHASES,
-            mockResult: DEMO_MOCK_RESULT
+            mockResult: DEMO_MOCK_RESULT,
+            mockMfg: DEMO_MOCK_MFG,
+            mockBattle: DEMO_MOCK_BATTLE,
+            setTimeScale: () => { }
         };
     }
     return ctx;
@@ -174,6 +214,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         isActive: false,
         currentStep: 0,
         currentPhase: 0,
+        timeScale: 1,
         directorText: "",
         intentText: null,
         ghostPosition: null,
@@ -182,6 +223,8 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         showGate: false,
         showRitual: false,
         showMockResult: false,
+        showManufacturing: false,
+        showBattle: false,
         pendingQuery: null,
         profileData: { height: 170, weight: 70, age: 25, allergies: [], goals: [] },
     });
@@ -245,7 +288,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
             case "show_intent":
                 setState(prev => ({ ...prev, intentText: action.text }));
                 if (action.duration) {
-                    const t = setTimeout(() => setState(prev => ({ ...prev, intentText: null })), action.duration);
+                    const t = setTimeout(() => setState(prev => ({ ...prev, intentText: null })), action.duration / state.timeScale);
                     timeoutRefs.current.push(t);
                 }
                 break;
@@ -260,7 +303,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
                 break;
 
             case "ghost_type":
-                typeText(action.target, action.text, action.speed || 80);
+                typeText(action.target, action.text, (action.speed || 80) / state.timeScale);
                 break;
 
             case "show_gate":
@@ -297,13 +340,21 @@ export function DemoProvider({ children }: { children: ReactNode }) {
                 break;
 
             case "show_mock_result":
-                setState(prev => ({ ...prev, showMockResult: true }));
+                setState(prev => ({ ...prev, showMockResult: true, showManufacturing: false, showBattle: false }));
+                break;
+
+            case "show_manufacturing":
+                setState(prev => ({ ...prev, showManufacturing: true, showMockResult: false, showBattle: false }));
+                break;
+
+            case "show_battle":
+                setState(prev => ({ ...prev, showBattle: true, showManufacturing: false, showMockResult: false }));
                 break;
 
             case "highlight":
                 setState(prev => ({ ...prev, highlightTarget: action.target }));
                 if (action.duration) {
-                    const t = setTimeout(() => setState(prev => ({ ...prev, highlightTarget: null })), action.duration);
+                    const t = setTimeout(() => setState(prev => ({ ...prev, highlightTarget: null })), action.duration / state.timeScale);
                     timeoutRefs.current.push(t);
                 }
                 break;
@@ -319,17 +370,24 @@ export function DemoProvider({ children }: { children: ReactNode }) {
                     isTyping: false,
                     showGate: false,
                     showRitual: false,
-                    showMockResult: false
+                    showMockResult: false,
+                    showManufacturing: false,
+                    showBattle: false
                 }));
                 break;
         }
     }, [getElementCenter, typeText, clearTimeouts]);
 
     const startDemo = useCallback(() => {
-        console.log("Starting CIPHER Royal Demo v4.0...");
+        console.log("Starting CIPHER Royal Demo v4.5...");
         clearTimeouts();
+        // Always start at 1x unless specified otherwise, but here keep current or 1? 
+        // Let's reset to 1x on full restart? Or keep user preference? 
+        // User asked for speed up, implies persistence. Let's keep current state.timeScale
+        const speed = state.timeScale;
 
-        setState({
+        setState(prev => ({
+            ...prev,
             isActive: true,
             currentStep: 0,
             currentPhase: 0,
@@ -341,9 +399,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
             showGate: false,
             showRitual: false,
             showMockResult: false,
+            showManufacturing: false,
+            showBattle: false,
             pendingQuery: null,
             profileData: { height: 170, weight: 70, age: 25, allergies: [], goals: [] },
-        });
+        }));
 
         DEMO_SCRIPT.forEach((step, index) => {
             const t = setTimeout(() => {
@@ -353,10 +413,10 @@ export function DemoProvider({ children }: { children: ReactNode }) {
                     currentPhase: step.phase ?? prev.currentPhase
                 }));
                 executeAction(step.action);
-            }, step.time);
+            }, step.time / speed);
             timeoutRefs.current.push(t);
         });
-    }, [clearTimeouts, executeAction]);
+    }, [clearTimeouts, executeAction, state.timeScale]);
 
     const stopDemo = useCallback(() => {
         console.log("Demo stopped");
@@ -370,12 +430,16 @@ export function DemoProvider({ children }: { children: ReactNode }) {
             isTyping: false,
             showGate: false,
             showRitual: false,
-            showMockResult: false
+            showMockResult: false,
+            showManufacturing: false,
+            showBattle: false
         }));
     }, [clearTimeouts]);
 
-    const skipToPhase = useCallback((phaseIndex: number) => {
+    const skipToPhase = useCallback((phaseIndex: number, speedOverride?: number) => {
         clearTimeouts();
+        
+        const speed = speedOverride || state.timeScale;
 
         const phaseStartIndex = DEMO_SCRIPT.findIndex(step => step.phase === phaseIndex);
         if (phaseStartIndex === -1) return;
@@ -385,7 +449,16 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         setState(prev => ({
             ...prev,
             currentStep: phaseStartIndex,
-            currentPhase: phaseIndex
+            currentPhase: phaseIndex,
+            // Reset visual flags to prevent stuck overlays
+            showGate: false,
+            showRitual: false,
+            directorText: "",
+            intentText: null,
+            // Reset Main Views, but ensure context is preserved for specific phases
+            showMockResult: phaseIndex === 5, // Phase 5 (Verdict) relies on Result being visible
+            showManufacturing: false,
+            showBattle: false
         }));
 
         DEMO_SCRIPT.slice(phaseStartIndex).forEach((step, i) => {
@@ -396,10 +469,15 @@ export function DemoProvider({ children }: { children: ReactNode }) {
                     currentPhase: step.phase ?? prev.currentPhase
                 }));
                 executeAction(step.action);
-            }, step.time - startTime);
+            }, (step.time - startTime) / speed);
             timeoutRefs.current.push(t);
         });
-    }, [clearTimeouts, executeAction]);
+    }, [clearTimeouts, executeAction, state.timeScale]);
+
+    const setTimeScale = useCallback((speed: number) => {
+        setState(prev => ({ ...prev, timeScale: speed }));
+        skipToPhase(state.currentPhase, speed);
+    }, [state.currentPhase, skipToPhase]);
 
     useEffect(() => {
         return () => clearTimeouts();
@@ -412,7 +490,10 @@ export function DemoProvider({ children }: { children: ReactNode }) {
             stopDemo,
             skipToPhase,
             phases: PHASES,
-            mockResult: DEMO_MOCK_RESULT
+            mockResult: DEMO_MOCK_RESULT,
+            mockMfg: DEMO_MOCK_MFG,
+            mockBattle: DEMO_MOCK_BATTLE,
+            setTimeScale
         }}>
             {children}
         </DemoContext.Provider>

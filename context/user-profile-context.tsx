@@ -52,6 +52,7 @@ interface ProfileContextType {
     removeConstraint: (type: "allergies" | "diet" | "conditions", value: string) => void;
     isProfileComplete: boolean;
     hasConflict: (ingredientList: string[]) => string | null; // Returns conflicting ingredient or null
+    resetProfile: () => void;
 }
 
 const ProfileContext = createContext<ProfileContextType | null>(null);
@@ -179,6 +180,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         return null;
     };
 
+    const resetProfile = () => {
+        setProfile(DEFAULT_PROFILE);
+        localStorage.removeItem("encode_user_profile");
+    };
+
     return (
         <ProfileContext.Provider value={{
             profile,
@@ -187,7 +193,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             addConstraint,
             removeConstraint,
             isProfileComplete,
-            hasConflict
+            hasConflict,
+            resetProfile
         }}>
             {children}
         </ProfileContext.Provider>

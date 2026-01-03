@@ -5,8 +5,6 @@ export interface BentoComponent {
     data: any;
 }
 
-// ... existing interfaces
-
 export interface SimulatorModifier {
     id: string;
     label: string;
@@ -18,9 +16,45 @@ export interface SimulatorModifier {
         carbs_g?: number;
         fat_g?: number;
         score_impact?: number;
+        score_delta?: number; // legacy support
         remove_ingredients?: string[];
         add_vitamins?: string[];
     };
+}
+
+export interface IngredientAnalysis {
+    id: string;
+    productName: string;
+    healthScore: number;
+    aiSummary: string;
+    agent_note?: string;
+    category: string;
+    visualTheme: "neon-red" | "neon-green" | "dark-slate";
+
+    // Detailed Metadata
+    metadata?: {
+        source: string;
+        portion: string;
+        caloricDensity: string;
+    };
+
+    // Goal Alignment (Radar Data)
+    goalAlignment?: {
+        muscleGain: number;
+        weightLoss: number;
+        longevity: number;
+        energy: number;
+    };
+
+    keyInsights: { icon: string; title: string; description: string; type: 'risk' | 'benefit' | 'warning' | 'neutral' }[];
+
+    simulation?: {
+        base_stats?: BaseStats;
+        modifiers: SimulatorModifier[];
+        verdicts?: any;
+    };
+    tradeOffs?: { pro: string; con: string }[];
+    confidenceScore?: number;
 }
 
 export interface BaseStats {
@@ -30,7 +64,13 @@ export interface BaseStats {
     protein_g: number;
     carbs_g: number;
     fat_g: number;
+    magnesium_mg?: number;
+    potassium_mg?: number;
     ingredients: string[];
+    additives?: {
+        is_clean: boolean;
+        detected: string[];
+    };
 }
 
 export interface HealthDashboardData {
@@ -38,23 +78,20 @@ export interface HealthDashboardData {
         product_name: string;
         analysis_date: string;
         category: string;
+        source?: string;
+        portion_size?: string;
+        caloric_density?: string;
+    };
+    goal_alignment?: {
+        muscle_gain: number;
+        weight_loss: number;
+        longevity: number;
+        energy: number;
     };
     layout_config: {
         theme: "dark_slate" | "neon_red" | "neon_green";
         emphasis: string;
     };
-    // The main simulation data might sit at the top level or within the simulator component.
-    // The prompt puts it in "product_state" and "modifiers" in the JSON.
-    // But the current schema uses `components`. 
-    // I will look at where to put `product_state`. 
-    // I'll add optional `simulation` field to the root or ensure components carry it. 
-    // Actually, the prompt example showed `modifiers` inside the JSON root or inside the component? 
-    // The Prompt #2 Example showed: { "product_state": {...}, "modifiers": [...] } at the ROOT.
-    // But my Dashboard uses `components` array.
-    // I will attach `product_state` to the Root `HealthDashboardData` to be accessible by all components if needed (Context), 
-    // OR just put it in the `interactive_simulator` component and pass it up?
-    // Passing it up is cleaner for `HealthIntelligenceDashboard` to manage state.
-    // Let's add `product_state` to `HealthDashboardData`.
     simulation?: {
         base_stats: BaseStats;
         modifiers: SimulatorModifier[];
@@ -63,7 +100,11 @@ export interface HealthDashboardData {
             improved: string;
             optimized: string;
         };
+        additives?: {
+            is_clean: boolean;
+            detected: string[];
+        };
     };
     components: BentoComponent[];
+    follow_up_data?: any;
 }
-

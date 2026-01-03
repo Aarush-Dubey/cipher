@@ -2,19 +2,27 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
+    Activity,
+    AlertTriangle,
     ArrowUp,
     RefreshCcw,
     Sparkles,
+    Zap,
+    CheckCircle,
+    Copy,
+    Share2,
+    Send
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { MOCK_SCANS, IngredientAnalysis } from "@/lib/data";
-import { useState, useRef, useEffect } from "react";
-import { GenerativeUIPattern } from "@/components/generative-ui-patterns";
-import { BrainCircuit, Activity, AlertTriangle, Zap, CheckCircle, Biohazard, Dna, Leaf, Scale, ShieldAlert, Siren } from "lucide-react";
+import { IngredientAnalysis } from "@/types/dashboard";
+import { Biohazard, BrainCircuit, Dna, Leaf, Scale, ShieldAlert, Siren, Microscope, Swords } from "lucide-react";
+import { ManufacturingTimeline } from "@/components/generative/manufacturing-timeline";
+import { BattleCard } from "@/components/generative/battle-card";
+import { useState, useMemo, useEffect, useRef } from "react";
 
+// --- Icons Mapping ---
 const iconMap: Record<string, any> = {
     Activity,
     AlertTriangle,
@@ -29,271 +37,326 @@ const iconMap: Record<string, any> = {
     Zap
 };
 
-// --- Components for the Initial "Card" (The Original Dashboard) ---
-// We treat the original dashboard as just one type of "UIPattern" called 'dashboard-summary'
-// But for cleaner code, we'll keep it as a sub-component here
-function DashboardCard({ data, minimized }: { data: IngredientAnalysis, minimized: boolean }) {
-    // Animation Variants based on Visual Theme
-    const getThemeConfig = (theme: IngredientAnalysis['visualTheme']) => {
-        switch (theme) {
-            case 'neon-red': // The "Glitch"
-                return {
-                    variants: {
-                        initial: { x: 0 },
-                        animate: {
-                            x: [0, -2, 2, -2, 2, 0],
-                            filter: ["hue-rotate(0deg)", "hue-rotate(90deg)", "hue-rotate(0deg)"],
-                        },
-                        transition: { duration: 0.3, repeat: 2, ease: "easeInOut" as const }
-                    },
-                    styles: {
-                        ringColor: "text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]",
-                        bgGlow: "bg-red-500/10",
-                        border: "border-red-500/20",
-                        icon: "text-red-400"
-                    }
-                };
-            case 'neon-green': // The "Bloom"
-                return {
-                    variants: {
-                        initial: { scale: 0.95, opacity: 0.8 },
-                        animate: {
-                            scale: [0.95, 1.05, 1],
-                            opacity: 1,
-                            boxShadow: ["0 0 0px rgba(0,0,0,0)", "0 0 20px rgba(16,185,129,0.3)", "0 0 0px rgba(0,0,0,0)"]
-                        },
-                        transition: { duration: 1.5, ease: "easeOut" as const }
-                    },
-                    styles: {
-                        ringColor: "text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)]",
-                        bgGlow: "bg-emerald-500/10",
-                        border: "border-emerald-500/20",
-                        icon: "text-emerald-400"
-                    }
-                };
-            case 'holographic-blue': // The "Flicker" (Low Confidence)
-                return {
-                    variants: {
-                        initial: { opacity: 0.5 },
-                        animate: { opacity: [1, 0.4, 1, 0.5, 1] },
-                        transition: { duration: 0.2, repeat: 3 }
-                    },
-                    styles: {
-                        ringColor: "text-blue-400",
-                        bgGlow: "bg-blue-500/10",
-                        border: "border-blue-500/20",
-                        icon: "text-blue-400"
-                    }
-                };
-            default: // neon-amber
-                return {
-                    variants: {
-                        initial: {},
-                        animate: {},
-                        transition: {}
-                    },
-                    styles: {
-                        ringColor: "text-amber-500",
-                        bgGlow: "bg-amber-500/10",
-                        border: "border-amber-500/20",
-                        icon: "text-amber-400"
-                    }
-                };
-        }
-    };
+// --- Data Mapper ---
+function mapApiToDashboard(apiData: any): IngredientAnalysis {
+    const heroComponent = apiData.components?.find((c: any) => c.id === 'hero' || c.type === 'score_ring');
+    const summaryComponent = apiData.components?.find((c: any) => c.id === 'summary' || c.type === 'text_block');
+    const riskComponent = apiData.components?.find((c: any) => c.id === 'risks' || c.type === 'red_flag_list');
 
-    const themeConfig = getThemeConfig(data.visualTheme);
+    // Safe extraction of insights
+    const insights = (riskComponent?.data?.flags || []).map((flag: any) => ({
+        icon: flag.risk_level === 'high' ? 'ShieldAlert' : 'AlertTriangle',
+        title: flag.name,
+        description: flag.description,
+        type: flag.risk_level === 'high' ? 'risk' as const : 'warning' as const
+    }));
+
+    return {
+        id: apiData.meta?.product_name || 'unknown',
+        productName: apiData.meta?.product_name || 'Unknown Product',
+        healthScore: apiData.simulation?.base_stats?.score || heroComponent?.data?.grade || 0,
+        aiSummary: summaryComponent?.data?.headline || "Analysis complete.",
+        agent_note: apiData.agent_note || "Clinical constraints integrated.",
+        category: apiData.meta?.category || 'General',
+        metadata: {
+            source: apiData.meta?.source || "Analyzed Source",
+            portion: apiData.meta?.portion_size || "Standard Serving",
+            caloricDensity: apiData.meta?.caloric_density || "Medium"
+        },
+        goalAlignment: {
+            muscleGain: apiData.goal_alignment?.muscle_gain || 50,
+            weightLoss: apiData.goal_alignment?.weight_loss || 50,
+            longevity: apiData.goal_alignment?.longevity || 50,
+            energy: apiData.goal_alignment?.energy || 50
+        },
+        visualTheme: apiData.layout_config?.theme || 'dark-slate',
+        keyInsights: insights,
+        simulation: apiData.simulation,
+        tradeOffs: [],
+        confidenceScore: 0.95
+    };
+}
+
+// --- REDESIGNED: The Obsidian Monolith Dashboard ---
+// --- Zone 2: Goal Alignment Radar Chart ---
+function RadarChart({ goals }: { goals: any }) {
+    // Normalize values to 0-40 radius
+    const r = 40;
+    const c = 50; // Center
+    const p1 = (goals.muscleGain / 100) * r;
+    const p2 = (goals.weightLoss / 100) * r;
+    const p3 = (goals.longevity / 100) * r;
+    const p4 = (goals.energy / 100) * r;
+
+    const path = `M ${c} ${c - p1} L ${c + p2} ${c} L ${c} ${c + p3} L ${c - p4} ${c} Z`;
+
+    return (
+        <div className="relative w-32 h-32 flex items-center justify-center">
+            {/* Axis Labels */}
+            <span className="absolute top-0 text-[8px] text-white/40 uppercase">Muscle</span>
+            <span className="absolute right-0 text-[8px] text-white/40 uppercase">Weight</span>
+            <span className="absolute bottom-0 text-[8px] text-white/40 uppercase">Long.</span>
+            <span className="absolute left-0 text-[8px] text-white/40 uppercase">Energy</span>
+
+            <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+                {/* Background Grid */}
+                <polygon points="50,10 90,50 50,90 10,50" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                <polygon points="50,30 70,50 50,70 30,50" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+
+                {/* Data Shape */}
+                <motion.path
+                    d={path}
+                    fill="rgba(212, 175, 55, 0.2)"
+                    stroke="#D4AF37"
+                    strokeWidth="2"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                />
+            </svg>
+        </div>
+    );
+}
+
+// --- Zone 4: Data Grid Bar ---
+function StatBar({ label, value, max, unit, color }: { label: string, value: number, max: number, unit: string, color: string }) {
+    const percent = Math.min((value / max) * 100, 100);
+    return (
+        <div className="flex flex-col gap-1">
+            <div className="flex justify-between text-[10px] uppercase tracking-wider font-mono text-white/60">
+                <span>{label}</span>
+                <span className={color}>{value}{unit}</span>
+            </div>
+            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${percent}%` }}
+                    className={`h-full ${color.replace('text-', 'bg-')}`}
+                />
+            </div>
+        </div>
+    );
+}
+
+function DashboardCard({ data, minimized }: { data: IngredientAnalysis; minimized?: boolean }) {
+    const [activeMods, setActiveMods] = useState<Set<string>>(new Set());
+
+    // Calculate Dynamic Stats based on Modifiers
+    const currentStats = useMemo(() => {
+        let stats = {
+            score: data.healthScore,
+            sodium: data.simulation?.base_stats?.sodium_mg || 0,
+            protein: data.simulation?.base_stats?.protein_g || 0
+        };
+
+        if (data.simulation?.modifiers) {
+            activeMods.forEach(modId => {
+                const mod = data.simulation!.modifiers.find(m => m.id === modId);
+                if (mod && mod.impact) {
+                    stats.score += (mod.impact.score_delta || mod.impact.score_impact || 0);
+                    stats.sodium += (mod.impact.sodium_mg || 0);
+                    stats.protein += (mod.impact.protein_g || 0);
+                }
+            });
+        }
+        // Cap score at 100
+        stats.score = Math.min(100, Math.max(0, stats.score));
+        return stats;
+    }, [activeMods, data]);
+
+    const toggleMod = (id: string, currentlyActive: boolean) => {
+        const next = new Set(activeMods);
+        if (currentlyActive) {
+            next.delete(id);
+        } else {
+            next.add(id);
+        }
+        setActiveMods(next);
+    };
 
     if (minimized) {
         return (
-            <motion.div layoutId="dashboard-card" className="w-full">
-                <Card className="p-4 flex items-center justify-between bg-secondary/20 border-white/5 backdrop-blur-sm">
-                    <div className="flex items-center gap-4">
-                        <div className={cn("w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg",
-                            data.healthScore >= 70 ? "bg-emerald-500/20 text-emerald-500" : "bg-red-500/20 text-red-500"
-                        )}>
-                            {data.healthScore}
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-white">{data.name}</h3>
-                            <div className="text-xs text-muted-foreground">{data.intentInference}</div>
-                        </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground italic">Analysis Context Active</div>
-                </Card>
-            </motion.div>
-        )
+            <div className="max-w-xl p-4 rounded-2xl bg-[#0A0A0F]/80 border border-white/10 text-white/60 text-sm flex justify-between items-center backdrop-blur-md">
+                <span>{data.productName}</span>
+                <span className="px-2 py-1 bg-white/5 rounded text-white">{currentStats.score}/100</span>
+            </div>
+        );
     }
 
+    const scoreColor = currentStats.score > 80 ? 'text-emerald-400' : currentStats.score > 50 ? 'text-amber-400' : 'text-red-400';
+    const ringColor = currentStats.score > 80 ? 'stroke-emerald-500' : currentStats.score > 50 ? 'stroke-amber-500' : 'stroke-red-500';
+
     return (
-        <motion.div layoutId="dashboard-card" className="space-y-6 w-full">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-white/5 gap-4">
-                <div className="space-y-2">
-                    <motion.h2 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-                        {data.name}
-                    </motion.h2>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white/5 w-fit px-3 py-1 rounded-full border border-white/5">
-                        <BrainCircuit className="w-4 h-4 text-primary" />
-                        <span>{data.intentInference}</span>
+        <motion.div
+            className="w-full bg-[#050505]/90 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-8 text-white shadow-2xl relative overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+        >
+            {/* Ambient Glow */}
+            <div className={`absolute top-0 right-0 w-[500px] h-[500px] opacity-10 bg-gradient-to-b ${currentStats.score > 50 ? 'from-[#D4AF37]/50' : 'from-red-500/50'} to-transparent rounded-full blur-[100px] -z-10`} />
+
+            {/* --- ZONE 1 & 2: HEADER & RADAR --- */}
+            <div className="flex flex-col md:flex-row justify-between items-start gap-6 border-b border-white/5 pb-6 mb-6">
+                <div className="flex-1 space-y-4">
+                    <div>
+                        <h2 className="text-3xl font-light tracking-tight text-white mb-2">{data.productName}</h2>
+                        {/* Meta Data Row */}
+                        <div className="flex flex-wrap gap-4 text-[10px] font-mono uppercase tracking-widest text-[#D4AF37]/80">
+                            <span className="flex items-center gap-1"><span className="w-1 h-1 bg-[#D4AF37] rounded-full" /> {data.metadata?.source || "Source Unknown"}</span>
+                            <span className="flex items-center gap-1"><span className="w-1 h-1 bg-[#D4AF37] rounded-full" /> {data.metadata?.portion || "Standard Serving"}</span>
+                            <span className="flex items-center gap-1"><span className="w-1 h-1 bg-[#D4AF37] rounded-full" /> {data.metadata?.caloricDensity || "Medium"} Density</span>
+                        </div>
+                    </div>
+                    {/* UI Soundbite */}
+                    <div className="relative pl-4 border-l-2 border-[#D4AF37]">
+                        <p className="text-sm text-white/80 italic leading-relaxed">"{data.aiSummary}"</p>
+                    </div>
+                </div>
+
+                {/* Radar + Score */}
+                <div className="flex items-center gap-6">
+                    <div className="relative w-20 h-20 flex items-center justify-center">
+                        <svg className="w-full h-full -rotate-90">
+                            <circle cx="40" cy="40" r="36" className="fill-none stroke-white/5 stroke-[4]" />
+                            <circle
+                                cx="40" cy="40" r="36"
+                                className={`fill-none ${ringColor} stroke-[4] transition-all duration-1000`}
+                                strokeDasharray={226}
+                                strokeDashoffset={226 - (currentStats.score / 100) * 226}
+                                strokeLinecap="round"
+                            />
+                        </svg>
+                        <span className={`absolute text-2xl font-bold ${scoreColor}`}>{currentStats.score}</span>
+                    </div>
+                    {/* Radar Chart */}
+                    <RadarChart goals={data.goalAlignment || { muscleGain: 50, weightLoss: 50, longevity: 50, energy: 50 }} />
+                </div>
+            </div>
+
+
+            {/* --- ZONES 3 & 4: INSIGHTS & DATA GRID --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+
+                {/* Vertical Analysis Log (Zone 3) */}
+                <div className="space-y-4">
+                    <h3 className="text-xs uppercase tracking-widest text-white/30 font-semibold mb-2">Analysis Log</h3>
+
+                    {/* Primary Alert (Red) */}
+                    <div className="bg-red-500/5 border-l-2 border-red-500 p-4 rounded-r-xl">
+                        <div className="flex items-center gap-2 text-red-400 mb-1">
+                            <ShieldAlert className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Critical Flag</span>
+                        </div>
+                        <p className="text-sm text-white/80">{data?.keyInsights?.[0]?.description || "High Sodium content detected relative to daily limits."}</p>
+                    </div>
+
+                    {/* Bio Flag (Yellow) */}
+                    <div className="bg-amber-500/5 border-l-2 border-amber-500 p-4 rounded-r-xl">
+                        <div className="flex items-center gap-2 text-amber-400 mb-1">
+                            <Leaf className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Bio-Availability</span>
+                        </div>
+                        <p className="text-sm text-white/80">{data?.keyInsights?.[1]?.description || "Nutrients may have reduced absorption rates."}</p>
+                    </div>
+
+                    {/* Benefit (Green) */}
+                    <div className="bg-emerald-500/5 border-l-2 border-emerald-500 p-4 rounded-r-xl">
+                        <div className="flex items-center gap-2 text-emerald-400 mb-1">
+                            <Zap className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Asset Discovered</span>
+                        </div>
+                        <p className="text-sm text-white/80">{data?.keyInsights?.[2]?.description || "Contains beneficial micronutrients for energy."}</p>
+                    </div>
+                </div>
+
+                {/* Molecular Grid (Zone 4) */}
+                <div className="space-y-6">
+                    <h3 className="text-xs uppercase tracking-widest text-white/30 font-semibold mb-2">Molecular Profile</h3>
+
+                    {/* Macros */}
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                        <StatBar label="Protein" value={currentStats.protein} max={50} unit="g" color="text-emerald-400" />
+                        <StatBar label="Sodium" value={currentStats.sodium} max={2500} unit="mg" color="text-red-400" />
+                        <StatBar label="Carbs" value={data.simulation?.base_stats?.carbs_g || 0} max={100} unit="g" color="text-blue-400" />
+                        <StatBar label="Fats" value={data.simulation?.base_stats?.fat_g || 0} max={40} unit="g" color="text-yellow-400" />
+                    </div>
+
+                    {/* Micros & Clean Label */}
+                    <div className="pt-4 border-t border-white/5 space-y-3">
+                        <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-emerald-500/10 rounded-md text-emerald-400"><Leaf className="w-4 h-4" /></div>
+                                <div>
+                                    <div className="text-xs text-white/50 uppercase">Magnesium</div>
+                                    <div className="text-sm font-medium">{data.simulation?.base_stats?.magnesium_mg || 0}mg <span className="text-white/30 text-[10px] ml-1">High</span></div>
+                                </div>
+                            </div>
+                            <div className="h-full w-px bg-white/10 mx-2" />
+                            <div className="flex items-center gap-3">
+                                <div>
+                                    <div className="text-xs text-white/50 uppercase">Potassium</div>
+                                    <div className="text-sm font-medium text-right">{data.simulation?.base_stats?.potassium_mg || 0}mg</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
+                            <span className="text-sm text-white/60">Artificial Preservatives</span>
+                            {data.simulation?.base_stats?.additives?.is_clean ? (
+                                <span className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase"><CheckCircle className="w-4 h-4" /> None Detected</span>
+                            ) : (
+                                <span className="flex items-center gap-2 text-red-500 text-xs font-bold uppercase"><AlertTriangle className="w-4 h-4" /> Detected</span>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            {/* --- ZONE 5: SIMULATION ENGINE --- */}
+            <div className="bg-black/40 -mx-6 -mb-8 p-6 border-t border-white/10">
+                <div className="flex justify-between items-end mb-4">
+                    <h3 className="text-sm font-medium text-[#D4AF37] uppercase tracking-widest flex items-center gap-2"><BrainCircuit className="w-4 h-4" /> Active Optimization Protocol</h3>
+                    <div className="text-right">
+                        <span className="text-xs text-white/40 block mb-1">Projected Score</span>
+                        <span className={`text-2xl font-bold ${scoreColor} transition-all`}>{currentStats.score} <span className="text-xs text-white/30 font-normal">/ 100</span></span>
+                    </div>
+                </div>
 
-                {/* Score Ring / Hero Card */}
-                <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.4 }}
-                    className="md:col-span-4 h-full"
-                >
-                    <Card className={cn(
-                        "h-full p-6 relative overflow-hidden bg-secondary/20 flex flex-col items-center justify-center min-h-[320px] backdrop-blur-sm",
-                        themeConfig.styles.border
-                    )}>
-                        {/* Dynamic Background Effect */}
-                        <div className={cn("absolute inset-0 opacity-20 transition-all duration-1000", themeConfig.styles.bgGlow)} />
-
-                        <div className="relative z-10 flex flex-col items-center">
-                            <motion.div
-                                className="relative w-48 h-48 flex items-center justify-center"
-                                variants={themeConfig.variants}
-                                initial="initial"
-                                animate="animate"
-                                transition={themeConfig.variants.transition}
-                            >
-                                {/* SVG Ring */}
-                                <svg className="absolute inset-0 w-full h-full -rotate-90 drop-shadow-2xl">
-                                    <circle cx="50%" cy="50%" r="45%" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-white/5" />
-                                    <motion.circle
-                                        cx="50%" cy="50%" r="45%"
-                                        stroke="currentColor" strokeWidth="6" fill="transparent"
-                                        className={themeConfig.styles.ringColor}
-                                        strokeLinecap="round"
-                                        initial={{ strokeDasharray: "283 283", strokeDashoffset: 283 }}
-                                        animate={{ strokeDashoffset: 283 - (283 * data.healthScore) / 100 }}
-                                        transition={{ duration: 1.5, ease: "easeOut" }}
-                                    />
-                                </svg>
-
-                                <div className="flex flex-col items-center animate-in fade-in duration-1000 delay-500">
-                                    <span className="text-6xl font-black tracking-tighter text-white">{data.healthScore}</span>
-                                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80 mt-1">Score</span>
-                                </div>
-                            </motion.div>
-
-                            {/* Confidence Meter if low */}
-                            {data.confidenceScore < 0.8 && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-6 flex items-center gap-2 px-3 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(data.simulation?.modifiers || []).slice(0, 4).map((mod) => (
+                        <div key={mod.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
+                            <div className="flex gap-3 items-center">
+                                {/* Custom Toggle Switch */}
+                                <button
+                                    onClick={() => toggleMod(mod.id, activeMods.has(mod.id))}
+                                    className={`w-10 h-6 rounded-full p-1 transition-all duration-300 ${activeMods.has(mod.id) ? 'bg-[#D4AF37]' : 'bg-white/20'}`}
                                 >
-                                    <AlertTriangle className="w-3 h-3" />
-                                    Low Confidence: {(data.confidenceScore * 100).toFixed(0)}%
-                                </motion.div>
-                            )}
-                        </div>
-                    </Card>
-                </motion.div>
+                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-300 ${activeMods.has(mod.id) ? 'translate-x-4' : 'translate-x-0'}`} />
+                                </button>
 
-                {/* AI Summary & Visual Theme */}
-                <motion.div
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                    className="md:col-span-8 h-full"
-                >
-                    <Card className={cn("h-full p-8 flex flex-col justify-center relative overflow-hidden backdrop-blur-xl border-white/5", themeConfig.styles.bgGlow)}>
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className={cn("p-2 rounded-lg bg-black/40 backdrop-blur-md border border-white/10", themeConfig.styles.icon)}>
-                                    <Zap className="w-6 h-6" />
+                                <div>
+                                    <div className={`text-sm font-medium transition-colors ${activeMods.has(mod.id) ? 'text-white' : 'text-white/60'}`}>{mod.label}</div>
+                                    <div className="text-[10px] text-emerald-400 font-mono">
+                                        {mod.impact.protein_g ? `+${mod.impact.protein_g}g Pro ` : ''}
+                                        {mod.impact.sodium_mg ? `${mod.impact.sodium_mg}mg Sod ` : ''}
+                                        {(mod.impact.score_delta || 0) > 0 && `+${mod.impact.score_delta} Score`}
+                                    </div>
                                 </div>
-                                <h3 className="text-xl font-semibold text-white/90">AI Verdict</h3>
-                            </div>
-
-                            <div className="text-lg md:text-xl leading-relaxed text-foreground/90 font-light">
-                                {data.aiSummary.split(" ").map((word, i) => (
-                                    <motion.span
-                                        key={i}
-                                        initial={{ opacity: 0, y: 5 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.4 + (i * 0.015) }}
-                                        className="inline-block mr-1.5"
-                                    >
-                                        {word}
-                                    </motion.span>
-                                ))}
                             </div>
                         </div>
-
-                        {/* Trade Offs */}
-                        <div className="mt-8 pt-6 border-t border-white/5 relative z-10">
-                            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3 font-semibold"> Trade-Off Analysis</div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {data.tradeOffs.map((t, i) => (
-                                    <div key={i} className="bg-black/20 rounded-lg p-3 border border-white/5 flex flex-col gap-1">
-                                        <div className="flex items-center gap-2 text-emerald-400 text-sm">
-                                            <CheckCircle className="w-3 h-3" /> <span className="font-medium text-white/80">{t.pro}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-red-400 text-sm">
-                                            <AlertTriangle className="w-3 h-3" /> <span className="font-medium text-white/60">{t.con}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Background blob */}
-                        <div className={cn("absolute -right-20 -bottom-20 w-80 h-80 blur-[80px] opacity-20 rounded-full bg-current", themeConfig.styles.ringColor.split(' ')[0])} />
-                    </Card>
-                </motion.div>
-
-                {/* Key Insights Bento Grid */}
-                <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {data.keyInsights.map((insight, i) => {
-                        const Icon = iconMap[insight.icon] || Activity;
-                        const colorClass = insight.type === 'risk' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
-                            insight.type === 'benefit' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' :
-                                insight.type === 'warning' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' :
-                                    'text-blue-400 bg-blue-500/10 border-blue-500/20'; // neutral
-
-                        return (
-                            <motion.div
-                                key={i}
-                                initial={{ y: 20, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                transition={{ delay: 0.6 + (i * 0.1) }}
-                            >
-                                <Card className={cn("h-full p-5 flex flex-col gap-3 transition-colors hover:bg-white/5", colorClass.split(' ').slice(1).join(' '))}>
-                                    <div className="flex items-center justify-between">
-                                        <span className={cn("text-xs font-bold uppercase tracking-wider opacity-80", colorClass.split(' ')[0])}>
-                                            {insight.type}
-                                        </span>
-                                        <Icon className={cn("w-5 h-5", colorClass.split(' ')[0])} />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-white text-lg mb-1">{insight.title}</h4>
-                                        <p className="text-sm text-muted-foreground/80 leading-snug">{insight.description}</p>
-                                    </div>
-                                </Card>
-                            </motion.div>
-                        )
-                    })}
+                    ))}
                 </div>
             </div>
         </motion.div>
     );
 }
 
+// --- Main Chat & Result Component ---
 
 interface MessageItem {
     id: string;
     role: 'user' | 'ai';
-    type: string; // e.g., 'dashboard', 'text', 'compliance_checklist', etc.
+    type: string;
     data: any;
 }
 
@@ -301,302 +364,212 @@ import { HealthIntelligenceDashboard } from "@/components/health-intelligence-da
 import { useUserProfile } from "@/context/user-profile-context";
 import { ConflictGuard } from "@/components/bio-sync-drawer";
 
-export function GenerativeResult({ query, userContext, onReset }: { query: string; userContext?: string; onReset: () => void }) {
-    // 2. Chat State & AI Initialization
+export function GenerativeResult({ query, userContext, onReset, onAnalysisComplete }: { query: string; userContext?: string; onReset: () => void; onAnalysisComplete?: (note: string) => void }) {
     const [messages, setMessages] = useState<MessageItem[]>([]);
     const [input, setInput] = useState("");
     const [isThinking, setIsThinking] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const { profile, hasConflict } = useUserProfile();
-    const [conflictIngredient, setConflictIngredient] = useState<string | null>(null);
+    const { profile } = useUserProfile();
 
-    // Shuffle Suggestions on Mount
-    useEffect(() => {
-        const pool = [
-            "Is this safe for kids?",
-            "What are the side effects?",
-            "Show me better alternatives",
-            "Is this vegan?",
-            "Will this cause a crash?",
-            "Is this banned in Europe?",
-            "What is the molecular structure?",
-            "Is the marketing true?",
-            "What is the daily safety limit?",
-            "Does it have allergens?"
-        ];
-        setSuggestions(pool.sort(() => 0.5 - Math.random()).slice(0, 3));
-    }, []);
-
-    // Initial AI Dashboard Generation
+    // Initial Load
     useEffect(() => {
         const generateDashboard = async () => {
+            setIsThinking(true);
             try {
-                // 1. Attempt Real AI Analysis with User Profile
                 const res = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         query,
                         userContext,
-                        userProfile: profile ? {
-                            goals: profile.goals,
-                            constraints: profile.constraints,
-                            dailySodiumCap: profile.dailySodiumCap,
-                            dailyCalories: profile.dailyCalories
-                        } : null
+                        userProfile: profile
                     })
                 });
 
-                if (!res.ok) throw new Error("Analysis API failed");
-                const aiData = await res.json();
-                setMessages([{ id: 'init', role: 'ai', type: 'dashboard', data: aiData }]);
+                if (!res.ok) throw new Error("Analysis failed");
+                const rawData = await res.json();
+                const processedData = mapApiToDashboard(rawData);
+                setMessages([{ id: 'init', role: 'ai', type: 'dashboard', data: processedData }]);
+                if (onAnalysisComplete && processedData.agent_note) {
+                    onAnalysisComplete(processedData.agent_note);
+                }
+                setIsThinking(false);
 
             } catch (error) {
-                console.warn("Falling back to error state:", error);
-
-                // 3. Generate Dynamic Error Dashboard (New Schema)
-                const errorDashboard = {
-                    meta: { product_name: query || "System Error", category: "Error", analysis_date: new Date().toISOString().split('T')[0] },
-                    layout_config: { theme: "dark_slate", emphasis: "none" },
-                    components: [
-                        { id: "e1", zone: "zone_1", type: "score_ring", data: { score: 0, grade: "F", label: "Connection Failed" } },
-                        { id: "e2", zone: "zone_1", type: "text_block", data: { headline: "System Offline", body: "Network analysis failed. Please check API configuration." } }
-                    ]
+                console.warn("Analysis mode unavailable (API Error), switching to simulation.", error);
+                // Fallback to ensure Dashboard Grid appears
+                // Fallback to ensure Dashboard Grid appears with Rich Dummy Data
+                const fallbackData: IngredientAnalysis = {
+                    id: "fallback-dummy",
+                    productName: query || "Dark Matter Sample",
+                    healthScore: 72,
+                    aiSummary: "Oops, API failed. Generating simulation based on standard biological baselines.",
+                    agent_note: "System Alert: Neural Link Unstable. Using cached heuristic model.",
+                    category: "Simulation",
+                    metadata: { source: "Cached Protocol", portion: "Unknown", caloricDensity: "Medium" },
+                    goalAlignment: { muscleGain: 45, weightLoss: 55, longevity: 65, energy: 60 },
+                    visualTheme: "dark-slate",
+                    keyInsights: [
+                        { icon: "ShieldAlert", title: "Data Stream Interrupted", description: "Real-time analysis failed. Showing projected molecular values.", type: "warning" },
+                        { icon: "Zap", title: "Energy Potential", description: "Estimated moderate energy release based on category averages.", type: "benefit" },
+                        { icon: "Scale", title: "Balance Check", description: "Macronutrient ratio appears balanced in this simulation.", type: "warning" }
+                    ],
+                    simulation: {
+                        base_stats: { score: 72, calories: 250, sodium_mg: 400, protein_g: 15, carbs_g: 30, fat_g: 8, magnesium_mg: 40, potassium_mg: 150 },
+                        modifiers: [
+                            { id: "mod1", label: "Theoretical Optimization", active: false, impact: { score_delta: 10, protein_g: 5 } }
+                        ],
+                        verdicts: { default: "Simulated", improved: "Optimized", optimized: "Ideal" }
+                    },
+                    confidenceScore: 0
                 };
-                setMessages([{ id: 'init', role: 'ai', type: 'dashboard', data: errorDashboard }]);
+                setMessages([{ id: 'error', role: 'ai', type: 'dashboard', data: fallbackData }]);
+                if (onAnalysisComplete) onAnalysisComplete("System Error: API Failed. Displaying Simulation.");
             }
         };
 
-        generateDashboard();
-    }, [query]);
+        if (messages.length === 0) generateDashboard();
+    }, [query, userContext, profile, messages.length]);
 
-    // Data Accessor for Chat Context
-    const data = messages[0]?.data;
+    // Handle Follow-up Chat
+    const handleSend = async (forcedInput?: string) => {
+        const inputText = forcedInput || input;
+        if (!inputText.trim()) return;
 
-    // Auto-scroll Logic (Fixed to prevent jumping to bottom on load)
-    useEffect(() => {
-        if (scrollRef.current && messages.length > 1) {
-            // Only scroll to bottom for chat messages, not the initial dashboard
-            scrollRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [messages, isThinking]);
-
-
-    const handleSend = async (override?: string) => {
-        const text = typeof override === 'string' ? override : input;
-        if (!text.trim() || isThinking) return;
-
-        // Add User Message
-        const userMsg: MessageItem = {
-            id: Date.now().toString(),
-            role: 'user',
-            type: 'text',
-            data: text
-        };
+        // Visual Optimistic Update
+        const userMsg = { id: Date.now().toString(), role: 'user' as const, type: 'text', data: inputText };
         setMessages(prev => [...prev, userMsg]);
         setInput("");
         setIsThinking(true);
 
+        // Get Context from previous dashboard
+        const lastDashboard = [...messages].reverse().find(m => m.type === 'dashboard')?.data as IngredientAnalysis;
+        const contextQuery = lastDashboard
+            ? `Original Product: "${lastDashboard.productName}". User Request: "${inputText}"`
+            : inputText;
+
         try {
-            // Call Grok API
-            const response = await fetch('/api/chat', {
+            const res = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    productContext: data,
-                    userQuery: userMsg.data
+                    query: contextQuery,
+                    userContext: `User is asking a follow-up about ${lastDashboard?.productName || "a product"}.`,
+                    userProfile: profile
                 })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error("Backend Error Details:", errorData);
-                throw new Error(errorData.error || `API Request Failed: ${response.status}`);
-            }
-            const result = await response.json();
+            if (!res.ok) throw new Error("Analysis failed");
+            const rawData = await res.json();
 
-            console.log("Grok Response:", result);
-
-            // --- Adapter Logic (Simplified for New Polymorphic Components) ---
-            let uiComponent = null;
-
-            const comp = result.component;
-            if (comp && comp.type) {
-                // The new Chat API returns { type: "compliance_checklist", data: {...} }
-                // which matches our GenerativeUIPattern directly.
-                uiComponent = comp;
-            }
-
-            // Construct Messages
-            const newMessages: MessageItem[] = [];
-
-            // 1. Text Summary (Always present)
-            newMessages.push({
-                id: (Date.now() + 1).toString(),
-                role: 'ai',
-                type: 'text',
-                data: result.summary || "Here is the analysis."
-            });
-
-            // 2. UI Component (If returned)
-            if (uiComponent) {
-                newMessages.push({
-                    id: (Date.now() + 2).toString(),
+            // Check for Specialized Follow-up Data
+            if (rawData.follow_up_data?.type === 'battle') {
+                setMessages(prev => [...prev, {
+                    id: (Date.now() + 1).toString(),
                     role: 'ai',
-                    type: uiComponent.type, // e.g., "compliance_checklist"
-                    data: uiComponent.data
-                });
+                    type: 'battle',
+                    data: rawData.follow_up_data.battle
+                }]);
+            } else if (rawData.follow_up_data?.type === 'manufacturing') {
+                setMessages(prev => [...prev, {
+                    id: (Date.now() + 1).toString(),
+                    role: 'ai',
+                    type: 'manufacturing',
+                    data: rawData.follow_up_data.manufacturing
+                }]);
+            } else {
+                // Default to text response (extracting headline or summary)
+                const summary = rawData.components?.find((c: any) => c.id === 'summary')?.data?.headline
+                    || rawData.components?.find((c: any) => c.id === 'risks')?.data?.flags?.[0]?.description
+                    || "I've analyzed that for you. Please check the dashboard.";
+
+                setMessages(prev => [...prev, {
+                    id: (Date.now() + 1).toString(),
+                    role: 'ai',
+                    type: 'text',
+                    data: summary
+                }]);
             }
 
-            setMessages(prev => [...prev, ...newMessages]);
-
-        } catch (error) {
-            console.error("Generative UI Error:", error);
-            // Fallback to offline mock logic or error text
-            // For now, simple error text as requested
-            const errorMsg: MessageItem = {
-                id: (Date.now() + 1).toString(),
-                role: 'ai',
-                type: 'text',
-                data: "I'm having trouble connecting to the neural network. Retrying simulation..."
-            };
-            setMessages(prev => [...prev, errorMsg]);
-
-            // Optional: Fallback to local mock if API fails?
-            // Keeping it simple as per request.
-        } finally {
             setIsThinking(false);
 
-            // Refresh Suggestions for next turn
-            const nextPool = [
-                "Is this safe for kids?",
-                "What are the side effects?",
-                "Show me better alternatives",
-                "Is this vegan?",
-                "Will this cause a crash?",
-                "Is this banned in Europe?",
-                "What is the molecular structure?",
-                "Is the marketing true?",
-                "What is the daily safety limit?",
-                "Does it have allergens?",
-                "Is it keto friendly?",
-                "What is the source?",
-                "Environmental impact?",
-                "Is the packaging safe?",
-                "Glycemic index?"
-            ];
-            setSuggestions(nextPool.sort(() => 0.5 - Math.random()).slice(0, 3));
+        } catch (error) {
+            console.error(error);
+            setIsThinking(false);
+            setMessages(prev => [...prev, { id: Date.now().toString(), role: 'ai', type: 'text', data: "I'm having trouble analyzing that right now." }]);
         }
     };
 
-    // Check for allergy conflict on query
-    const detectedConflict = hasConflict([query]);
-
     return (
-        <div className="w-full max-w-4xl mx-auto flex flex-col h-[calc(100vh-100px)] relative">
-            {/* Conflict Guard Banner */}
-            {detectedConflict && <ConflictGuard conflictIngredient={detectedConflict} />}
-
-            {/* Scrollable Feed */}
-            <div className="flex-1 overflow-y-auto pb-32 px-4 md:px-0 space-y-8 scrollbar-hide">
-                <AnimatePresence>
-                    {messages.map((msg, index) => {
-                        // Logic to shrink the main dashboard if it's no longer the only item
-                        const isDashboardToCheck = msg.type === 'dashboard';
-                        const isMinimized = isDashboardToCheck && messages.length > 1;
-
-                        return (
-                            <motion.div
-                                key={msg.id}
-                                layout
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className={cn(
-                                    "w-full",
-                                    msg.role === 'user' ? "flex justify-end" : ""
-                                )}
-                            >
-                                {msg.role === 'user' ? (
-                                    <div className="bg-white/10 text-white rounded-2xl rounded-tr-sm px-6 py-4 max-w-[80%] text-right text-lg font-light">
-                                        {msg.data}
-                                    </div>
-                                ) : (
-                                    <div className="w-full">
-                                        {msg.type === 'dashboard' ? (
-                                            <HealthIntelligenceDashboard data={msg.data} />
-                                        ) : (
-                                            <div className="flex gap-4">
-                                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 text-primary mt-2">
-                                                    <Sparkles className="w-4 h-4" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <GenerativeUIPattern component={{ type: msg.type, data: msg.data }} />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </motion.div>
-                        )
-                    })}
-                </AnimatePresence>
-
-                {isThinking && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex gap-4 items-center pl-12"
-                    >
-                        <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                    </motion.div>
-                )}
-                <div ref={scrollRef} className="h-4" />
-            </div>
-
-            {/* Persistent Omni-Bar at Bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-20">
-                <div className="relative max-w-3xl mx-auto">
-                    <Input
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                        placeholder="Ask about toxicity, safe limits, better alternatives..."
-                        className="h-16 pl-6 pr-14 rounded-full border-white/10 bg-secondary/50 backdrop-blur-xl shadow-2xl text-lg focus-visible:ring-primary/50"
-                    />
-                    <Button
-                        size="icon"
-                        className="absolute right-2 top-2 w-12 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                        onClick={() => handleSend()}
-                        disabled={!input.trim()}
-                    >
-                        <ArrowUp className="w-6 h-6" />
-                    </Button>
+        <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 pb-32">
+            {/* Messages Feed */}
+            {messages.map((msg, idx) => (
+                <div key={msg.id} className={cn("w-full transition-all duration-500", msg.role === 'user' ? 'flex justify-end' : '')}>
+                    {msg.type === 'dashboard' ? (
+                        <DashboardCard data={msg.data} minimized={idx < messages.length - 1} />
+                    ) : msg.type === 'manufacturing' ? (
+                        <div className="w-full h-[600px] relative">
+                            <ManufacturingTimeline data={msg.data} />
+                        </div>
+                    ) : msg.type === 'battle' ? (
+                        <div className="w-full relative">
+                            <BattleCard />
+                        </div>
+                    ) : (
+                        <div className={cn(
+                            "max-w-xl p-4 rounded-2xl backdrop-blur-md border",
+                            msg.role === 'user' ? "bg-white/10 border-white/20 text-white" : "bg-[#0A0A0F]/80 border-[#D4AF37]/30 text-white/80"
+                        )}>
+                            {msg.data}
+                        </div>
+                    )}
                 </div>
+            ))}
 
-                <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground/60 w-full overflow-x-auto pb-2 scrollbar-hide">
-                    <AnimatePresence>
-                        {suggestions.map((s, i) => (
-                            <motion.div
-                                key={s}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="flex gap-4 items-center"
-                            >
-                                <button
-                                    onClick={() => { setInput(s); handleSend(s); }}
-                                    className="hover:text-primary transition-colors whitespace-nowrap"
-                                >
-                                    {s}
-                                </button>
-                                {i < suggestions.length - 1 && <span>•</span>}
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
+            {isThinking && (
+                <div className="flex items-center gap-2 text-white/40 text-sm animate-pulse">
+                    <BrainCircuit className="w-4 h-4" /> Calculating biological impact...
+                </div>
+            )}
+
+            {/* Sticky Bottom Input Bar & Chips */}
+            <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent z-50">
+                <div className="max-w-3xl mx-auto flex flex-col gap-3">
+                    {/* Quick Chips */}
+                    <div className="flex items-center justify-end gap-2 overflow-x-auto no-scrollbar px-1">
+                        <button onClick={() => handleSend("Show Manufacturing Process")} className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full text-[#D4AF37] text-xs hover:bg-[#D4AF37]/20 transition-all text-nowrap">
+                            <Microscope className="w-3 h-3" /> Manufacturing Process
+                        </button>
+                        <button onClick={() => handleSend("Compare vs. Alternative / Battle")} className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full text-[#D4AF37] text-xs hover:bg-[#D4AF37]/20 transition-all text-nowrap">
+                            <Swords className="w-3 h-3" /> Battle Mode
+                        </button>
+                        <button onClick={() => handleSend("Optimize this for Muscle Gain")} className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full text-[#D4AF37] text-xs hover:bg-[#D4AF37]/20 transition-all text-nowrap">
+                            <Dna className="w-3 h-3" /> Optimize
+                        </button>
+                    </div>
+
+                    {/* Input Area */}
+                    <div className="relative flex gap-2 w-full">
+                        <Input
+                            id="demo-input"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                            className="bg-white/5 border-white/10 text-white placeholder:text-white/20 h-12 rounded-xl focus:border-[#D4AF37]/50 focus:ring-0 backdrop-blur-md"
+                            placeholder="Ask about toxicity, safe limits, better alternatives..."
+                        />
+                        <button
+                            id="demo-send-btn"
+                            onClick={() => handleSend()}
+                            disabled={!input.trim()}
+                            className="h-12 w-12 rounded-xl bg-[#D4AF37] text-black flex items-center justify-center hover:bg-[#D4AF37]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Send className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
+

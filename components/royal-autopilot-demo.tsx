@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useDemoController, DEMO_MOCK_RESULT } from "@/hooks/use-demo-controller";
 import { X, Play, AlertTriangle, User, Shield, Target, Check, Sparkles, Activity, Scale, Zap, ShieldAlert } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ManufacturingTimeline } from "@/components/generative/manufacturing-timeline";
+import { BattleCard } from "@/components/generative/battle-card";
 
 const luxuryEase = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
@@ -68,7 +70,7 @@ function IntentVisualizer({ text }: { text: string | null }) {
     );
 }
 
-// --- 3. The Gate (Profile Incomplete Popup) ---
+// --- 3. The Gate ---
 function TheGate({ isVisible }: { isVisible: boolean }) {
     return (
         <AnimatePresence>
@@ -81,42 +83,13 @@ function TheGate({ isVisible }: { isVisible: boolean }) {
                     className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/60 backdrop-blur-sm"
                 >
                     <div className="relative bg-[#0A0A0F] border border-amber-500/30 rounded-3xl p-8 max-w-md shadow-[0_0_100px_-20px_rgba(212,175,55,0.3)]">
-                        {/* Corner Accents */}
-                        <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-amber-500/50 rounded-tl-xl" />
-                        <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-amber-500/50 rounded-tr-xl" />
-                        <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-amber-500/50 rounded-bl-xl" />
-                        <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-amber-500/50 rounded-br-xl" />
-
-                        {/* Icon */}
-                        <motion.div
-                            animate={{ scale: [1, 1.1, 1] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 flex items-center justify-center"
-                        >
+                        <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 flex items-center justify-center">
                             <AlertTriangle className="w-10 h-10 text-amber-500" />
                         </motion.div>
-
-                        {/* Content */}
-                        <h2 className="text-center text-amber-500 font-mono text-xs tracking-[0.3em] uppercase mb-2">
-                            Analysis Blocked
-                        </h2>
-                        <h3 className="text-center text-white text-xl font-light mb-4">
-                            Subject Unidentified
-                        </h3>
-                        <p className="text-center text-white/60 text-sm leading-relaxed mb-8">
-                            To judge the fuel, we must first understand <span className="text-amber-500">your engine</span>.
-                            Please initialize your Bio-Avatar to continue.
-                        </p>
-
-                        {/* CTA */}
-                        <motion.button
-                            id="gate-init-btn"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="w-full py-4 bg-gradient-to-r from-amber-600/20 to-amber-500/20 border border-amber-500/50 rounded-xl text-amber-500 font-medium tracking-wider uppercase text-sm"
-                        >
-                            Initialize Bio-Avatar
-                        </motion.button>
+                        <h2 className="text-center text-amber-500 font-mono text-xs tracking-[0.3em] uppercase mb-2">Analysis Blocked</h2>
+                        <h3 className="text-center text-white text-xl font-light mb-4">Subject Unidentified</h3>
+                        <p className="text-center text-white/60 text-sm leading-relaxed mb-8">To judge the fuel, we must first understand <span className="text-amber-500">your engine</span>.</p>
+                        <motion.button id="gate-init-btn" whileHover={{ scale: 1.02 }} className="w-full py-4 bg-gradient-to-r from-amber-600/20 to-amber-500/20 border border-amber-500/50 rounded-xl text-amber-500 font-medium tracking-wider uppercase text-sm">Initialize Bio-Avatar</motion.button>
                     </div>
                 </motion.div>
             )}
@@ -132,152 +105,90 @@ function MiniRitualDisplay({ profileData }: { profileData: { height: number; wei
         { icon: Target, label: "Goals", done: profileData.goals.length > 0 },
         { icon: Sparkles, label: "Complete", done: profileData.goals.length > 0 },
     ];
-
-    const currentStep = steps.filter(s => s.done).length;
-
+    const formatLabel = (str: string) => str.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.6, ease: luxuryEase }}
-            className="fixed inset-0 z-[10003] flex items-center justify-center bg-[#050A14]/95 backdrop-blur-xl"
-        >
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.6, ease: luxuryEase }} className="fixed inset-0 z-[10003] flex items-center justify-center bg-[#050A14]/95 backdrop-blur-xl">
             <div className="max-w-lg w-full mx-8">
-                {/* Header */}
-                <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 flex items-center justify-center">
-                    <User className="w-8 h-8 text-amber-500" />
-                </motion.div>
-                <h2 className="text-center text-white text-2xl font-light tracking-wide mb-2">Bio-Calibration</h2>
-                <p className="text-center text-white/40 text-sm font-mono tracking-wider mb-8">STEP {currentStep} OF 4</p>
-
-                {/* Progress Steps */}
+                <div className="text-center mb-8">
+                    <User className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                    <h2 className="text-white text-2xl font-light">Bio-Calibration</h2>
+                </div>
                 <div className="flex justify-center gap-4 mb-8">
-                    {steps.map((s, i) => (
-                        <motion.div key={s.label} animate={s.done ? { scale: [1, 1.1, 1] } : {}} transition={{ duration: 0.5 }} className={cn("flex flex-col items-center gap-2", s.done ? "opacity-100" : "opacity-30")}>
+                    {steps.map((s) => (
+                        <div key={s.label} className={cn("flex flex-col items-center gap-2", s.done ? "opacity-100" : "opacity-30")}>
                             <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border", s.done ? "bg-amber-500/20 border-amber-500/50" : "bg-white/5 border-white/10")}>
-                                {s.done ? <Check className="w-5 h-5 text-green-400" /> : <s.icon className="w-5 h-5 text-white/30" />}
+                                <s.icon className="w-5 h-5 text-white" />
                             </div>
-                            <span className="text-[10px] uppercase tracking-wider text-white/50">{s.label}</span>
-                        </motion.div>
+                            <span className="text-[10px] uppercase text-white/50">{s.label}</span>
+                        </div>
                     ))}
                 </div>
-
-                {/* Data Display */}
-                <div className="bg-black/30 border border-white/10 rounded-xl p-6 space-y-4">
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center justify-between">
-                        <span className="text-white/50 text-sm">Dimensions</span>
-                        <span className="text-white font-mono">{profileData.height}cm / {profileData.weight}kg</span>
-                    </motion.div>
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="flex items-center justify-between">
-                        <span className="text-white/50 text-sm">Age</span>
-                        <span className="text-white font-mono">{profileData.age} years</span>
-                    </motion.div>
-                    {profileData.allergies.length > 0 && (
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="flex items-center justify-between">
-                            <span className="text-white/50 text-sm">Allergen Shield</span>
-                            <div className="flex gap-2">
-                                {profileData.allergies.map(a => <span key={a} className="px-2 py-1 bg-red-500/20 border border-red-500/30 rounded-full text-red-400 text-xs">{a}</span>)}
-                            </div>
-                        </motion.div>
-                    )}
-                    {profileData.goals.length > 0 && (
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="flex items-center justify-between">
-                            <span className="text-white/50 text-sm">Protocol</span>
-                            <span className="px-3 py-1 bg-amber-500/20 border border-amber-500/30 rounded-full text-amber-500 text-sm capitalize">{profileData.goals[0]?.replace('_', ' ')}</span>
-                        </motion.div>
-                    )}
+                <div className="bg-black/30 border border-white/10 rounded-xl p-6 space-y-3">
+                    <div className="flex justify-between text-white/50 text-sm">
+                        <span>Biometrics</span>
+                        <span className="text-white">{profileData.age} yr / {profileData.height}cm / {profileData.weight}kg</span>
+                    </div>
+                    <div className="flex justify-between text-white/50 text-sm">
+                        <span>Allergies</span>
+                        <span className="text-red-400 text-right max-w-[200px] truncate">
+                            {profileData.allergies.length > 0 ? profileData.allergies.join(", ") : "None Detected"}
+                        </span>
+                    </div>
+                    <div className="flex justify-between text-white/50 text-sm">
+                        <span>Primary Goal</span>
+                        <span className="text-amber-500 font-medium">
+                            {profileData.goals[0] ? formatLabel(profileData.goals[0]) : "Calibrating..."}
+                        </span>
+                    </div>
                 </div>
             </div>
         </motion.div>
     );
 }
 
-// --- 5. Mock Dashboard Result ---
-function MockDashboard() {
-    const data = DEMO_MOCK_RESULT;
-    const IconMap: Record<string, React.ElementType> = { ShieldAlert, Scale, Zap, Activity };
+// --- 5. Mock Dashboard & Polymorphic Views ---
+function DashboardContainer({ showMockResult, showManufacturing, showBattle }: { showMockResult: boolean; showManufacturing: boolean; showBattle: boolean }) {
+    const { mockResult: data, mockMfg, mockBattle } = useDemoController();
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            transition={{ duration: 0.8, ease: luxuryEase }}
-            className="fixed inset-0 z-[10002] flex items-center justify-center p-8 overflow-auto"
-        >
-            <div className="max-w-4xl w-full bg-[#0A0A0F]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h2 className="text-white text-2xl font-light">{data.name}</h2>
-                        <p className="text-white/50 text-sm mt-1">{data.aiSummary}</p>
-                    </div>
-                    {/* Score Ring */}
-                    <div id="score-ring" className="relative w-24 h-24">
-                        <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
-                            <motion.circle
-                                cx="48" cy="48" r="40" fill="none" stroke="#ef4444" strokeWidth="8" strokeLinecap="round"
-                                strokeDasharray={251.2}
-                                initial={{ strokeDashoffset: 251.2 }}
-                                animate={{ strokeDashoffset: 251.2 - (251.2 * data.healthScore / 100) }}
-                                transition={{ duration: 1.5, ease: luxuryEase }}
-                            />
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-3xl font-bold text-red-500">{data.healthScore}</span>
+        <AnimatePresence mode="wait">
+            {showMockResult && (
+                <motion.div key="dashboard" initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} transition={{ duration: 0.6, ease: luxuryEase }} className="fixed inset-0 z-[10002] flex items-center justify-center p-8">
+                    <div className="max-w-4xl w-full bg-[#0A0A0F]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+                        <div className="flex justify-between items-center mb-8">
+                            <div><h2 className="text-white text-2xl font-light">{data.name}</h2><p className="text-white/50 text-sm">{data.aiSummary}</p></div>
+                            <div id="score-ring" className="relative w-24 h-24 flex items-center justify-center border-4 border-white/10 rounded-full">
+                                <span className="text-3xl font-bold text-red-500">{data.healthScore}</span>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            {data.keyInsights.map((k, i) => (
+                                <div key={i} className="p-4 rounded-xl border border-white/10 bg-white/5">
+                                    <h4 className="text-white font-medium text-sm mb-1">{k.title}</h4>
+                                    <p className="text-white/60 text-xs">{k.description}</p>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                </div>
+                </motion.div>
+            )}
 
-                {/* Key Insights */}
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                    {data.keyInsights.map((insight, i) => {
-                        const Icon = IconMap[insight.icon] || Activity;
-                        const colors = {
-                            risk: "border-red-500/30 bg-red-500/10 text-red-400",
-                            warning: "border-amber-500/30 bg-amber-500/10 text-amber-400",
-                            benefit: "border-green-500/30 bg-green-500/10 text-green-400",
-                            neutral: "border-white/10 bg-white/5 text-white/60"
-                        };
-                        return (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 + i * 0.1 }}
-                                className={cn("p-4 rounded-xl border", colors[insight.type])}
-                            >
-                                <Icon className="w-6 h-6 mb-2" />
-                                <h4 className="font-medium text-sm mb-1">{insight.title}</h4>
-                                <p className="text-xs opacity-70">{insight.description}</p>
-                            </motion.div>
-                        );
-                    })}
-                </div>
-
-                {/* Simulation Preview */}
-                <div className="bg-black/30 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-white/50 text-xs uppercase tracking-wider mb-4">Simulation Engine</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {data.simulation.modifiers.map((mod, i) => (
-                            <motion.div
-                                key={mod.id}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.5 + i * 0.1 }}
-                                className="flex items-center gap-3 p-3 rounded-lg border border-white/10 hover:border-amber-500/30 cursor-pointer transition-colors"
-                            >
-                                <div className="w-5 h-5 rounded border border-white/30" />
-                                <span className="text-white/70 text-sm">{mod.label}</span>
-                                <span className="ml-auto text-green-400 text-xs">+{mod.impact.score_delta}</span>
-                            </motion.div>
-                        ))}
+            {showManufacturing && (
+                <motion.div key="manufacturing" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} transition={{ duration: 0.5 }} className="fixed inset-0 z-[10002] flex items-center justify-center p-8">
+                    <div className="max-w-4xl w-full">
+                        <ManufacturingTimeline data={mockMfg} />
                     </div>
-                </div>
-            </div>
-        </motion.div>
+                </motion.div>
+            )}
+
+            {showBattle && (
+                <motion.div key="battle" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} transition={{ duration: 0.5 }} className="fixed inset-0 z-[10002] flex items-center justify-center p-8">
+                    <div className="max-w-4xl w-full">
+                        <BattleCard data={mockBattle} />
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }
 
@@ -297,24 +208,7 @@ function DirectorCommentary({ text }: { text: string }) {
     );
 }
 
-// --- 7. Spotlight ---
-function Spotlight({ target }: { target: string | null }) {
-    const [rect, setRect] = useState<DOMRect | null>(null);
-    useEffect(() => {
-        if (!target) { setRect(null); return; }
-        const el = document.querySelector(target);
-        if (el) setRect(el.getBoundingClientRect());
-    }, [target]);
-    if (!rect) return null;
-    return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed z-[10003] pointer-events-none rounded-xl border-2 border-[#D4AF37] shadow-[0_0_100px_rgba(212,175,55,0.2)]"
-            style={{ top: rect.top - 10, left: rect.left - 10, width: rect.width + 20, height: rect.height + 20 }}>
-            <div className="absolute inset-0 bg-[#D4AF37]/5 animate-pulse rounded-xl" />
-        </motion.div>
-    );
-}
-
-// --- 8. Phase Progress ---
+// --- 7. Phase Progress ---
 function PhaseProgress({ currentPhase, phases, onSkip }: { currentPhase: number; phases: string[]; onSkip: (i: number) => void }) {
     return (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[10005]">
@@ -330,6 +224,32 @@ function PhaseProgress({ currentPhase, phases, onSkip }: { currentPhase: number;
     );
 }
 
+// --- 8. Speed Controls ---
+function SpeedControls({ currentSpeed, onSetSpeed }: { currentSpeed: number; onSetSpeed: (s: number) => void }) {
+    const speeds = [0.5, 1, 1.5, 2, 3, 4];
+    return (
+        <div className="fixed bottom-8 right-8 z-[10005]">
+            <div className="bg-[#050A14]/80 backdrop-blur-xl border border-white/10 rounded-full px-2 py-2 flex items-center gap-1">
+                <span className="text-[10px] uppercase text-white/40 font-mono pl-2 pr-1">Speed</span>
+                {speeds.map((s) => (
+                    <button
+                        key={s}
+                        onClick={() => onSetSpeed(s)}
+                        className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-mono transition-all",
+                            currentSpeed === s
+                                ? "bg-[#D4AF37] text-black font-bold shadow-[0_0_10px_#D4AF37]"
+                                : "hover:bg-white/10 text-white/60 hover:text-white"
+                        )}
+                    >
+                        {s}x
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 // --- MAIN COMPONENT ---
 export function RoyalAutopilotDemo() {
     const demo = useDemoController();
@@ -337,32 +257,31 @@ export function RoyalAutopilotDemo() {
 
     return (
         <>
-            {/* Dim Layer */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[9990] pointer-events-none" style={{ background: "radial-gradient(ellipse at center, rgba(5,10,20,0.3) 0%, rgba(5,10,20,0.85) 100%)" }} />
+            <div className="fixed inset-0 z-[9991] pointer-events-none opacity-5"><div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(255,255,255,0.03)_2px,rgba(255,255,255,0.03)_4px)]" /></div>
 
-            {/* Scanlines */}
-            <div className="fixed inset-0 z-[9991] pointer-events-none opacity-5">
-                <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(255,255,255,0.03)_2px,rgba(255,255,255,0.03)_4px)]" />
-            </div>
-
-            {/* Actors */}
             <GhostCursor position={demo.ghostPosition} isTyping={demo.isTyping} />
             <IntentVisualizer text={demo.intentText} />
             <TheGate isVisible={demo.showGate} />
             <AnimatePresence>{demo.showRitual && <MiniRitualDisplay profileData={demo.profileData} />}</AnimatePresence>
-            <AnimatePresence>{demo.showMockResult && <MockDashboard />}</AnimatePresence>
-            <AnimatePresence>{demo.highlightTarget && <Spotlight target={demo.highlightTarget} />}</AnimatePresence>
+
+            {/* Polymorphic Interface Container */}
+            <DashboardContainer
+                showMockResult={demo.showMockResult}
+                showManufacturing={demo.showManufacturing}
+                showBattle={demo.showBattle}
+            />
+
             <DirectorCommentary text={demo.directorText} />
             <PhaseProgress currentPhase={demo.currentPhase} phases={demo.phases} onSkip={demo.skipToPhase} />
+            <SpeedControls currentSpeed={demo.timeScale} onSetSpeed={demo.setTimeScale} />
 
-            {/* Controls */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="fixed bottom-8 left-8 z-[10005] flex items-center gap-3">
                 <button onClick={demo.stopDemo} className="flex items-center gap-2 px-4 py-2 rounded-full border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all text-sm">
                     <X className="w-4 h-4" /><span className="uppercase tracking-wider text-xs">Exit Demo</span>
                 </button>
             </motion.div>
 
-            {/* Cinema Badge */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed top-8 right-8 z-[10005]">
                 <div className="bg-[#050A14]/80 backdrop-blur-xl border border-[#D4AF37]/30 rounded-full px-4 py-2 flex items-center gap-2">
                     <motion.div className="w-2 h-2 bg-red-500 rounded-full" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
@@ -373,7 +292,6 @@ export function RoyalAutopilotDemo() {
     );
 }
 
-// --- TRIGGER BUTTON ---
 export function DemoTriggerButton({ onClick }: { onClick: () => void }) {
     return (
         <motion.button onClick={onClick} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="group relative px-8 py-4 bg-[#D4AF37]/10 border border-[#D4AF37]/50 rounded-full overflow-hidden">

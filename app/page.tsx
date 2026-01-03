@@ -19,6 +19,7 @@ export default function Home() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showRitual, setShowRitual] = useState(false);
   const [pendingQuery, setPendingQuery] = useState<string | null>(null);
+  const [agentNote, setAgentNote] = useState<string>("System Standby: Awaiting Input");
   const { isProfileComplete } = useUserProfile();
   const demoController = useDemoController();
 
@@ -234,7 +235,7 @@ export default function Home() {
                     productName: triage.state.productName,
                     userContext: triage.state.userConstraints.join(", ") || "General Analysis",
                     compatibilityScore: Math.floor(Math.random() * (95 - 60) + 60),
-                    agentNotes: "Clinical constraints integrated. Risk factors weighted."
+                    agentNotes: agentNote
                   }}
                 />
                 {/* 2. Main Dashboard */}
@@ -242,6 +243,7 @@ export default function Home() {
                   query={triage.state.productName}
                   userContext={triage.state.userConstraints.join(", ")}
                   onReset={handleReset}
+                  onAnalysisComplete={setAgentNote}
                 />
               </motion.div>
             )}

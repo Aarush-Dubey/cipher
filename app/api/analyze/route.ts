@@ -33,12 +33,12 @@ export async function POST(req: Request) {
                 constraints.push(`DAILY SODIUM LIMIT: ${userProfile.dailySodiumCap}mg`);
             }
             profileContext = constraints.length > 0
-                ? `\n\nPERSONALIZATION (CRITICAL - Adjust scores based on this):\n${constraints.join("\n")}`
+                ? `\n\nPERSONALIZATION (CRITICAL - Adjust scores based on this):\n${constraints.join("\n")}\n\nIMPORTANT: The user has ALREADY provided this profile. Do NOT ask for allergies, goals, or biometrics again. Use these values as absolute constraints.`
                 : "";
         }
 
         const completion = await client.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
+            model: "mixtral-8x7b-32768",
             messages: [
                 {
                     role: "system",
@@ -53,13 +53,35 @@ CRITICAL: Bias the health score and risks heavily based on this context.
    - Create 3 realistic "Hacks/Modifiers" that specificially address the product's flaws (e.g. "Drain Noodles" to reduce Fat, "Add Spinach" to add Fiber).
    - Calculate the QUANTITATIVE IMPACT of each hack (e.g. sodium_mg: -800).
    - Write 3 "Verdict" states: Default (Bad), Improved (Okay), Optimized (Great).
+4. If the user's query explicitly asks for a comparison between two products (e.g., "Product A vs Product B"), populate the "follow_up_data.battle" field.
+5. If the user's query explicitly asks about the manufacturing process or how a product is made (e.g., "How is X made?", "Manufacturing process of Y"), populate the "follow_up_data.manufacturing" field.
+6. Otherwise, set "follow_up_data.type" to null and leave "battle" and "manufacturing" empty.
 
 Output ONLY valid JSON matching this schema:
 {
   "meta": { 
       "product_name": "Exact Name", 
-      "analysis_date": "YYYY-MM-DD", 
-      "category": "String" 
+      "category": "String",
+      "source": "e.g. Whole Foods / Unknown",
+      "portion_size": "e.g. 350g",
+      "caloric_density": "High" | "Medium" | "Low"
+  },
+  "goal_alignment": {
+      "muscle_gain": number, // 0-100
+      "weight_loss": number, 
+      "longevity": number,
+      "energy": number
+  },
+  "follow_up_data": {
+        "type": "battle" | "manufacturing" | null,
+        "battle": {
+            "productA": { "name": "String", "protein": "String", "sodium": "String" },
+            "productB": { "name": "String", "protein": "String", "sodium": "String" },
+            "verdict": "String"
+        },
+        "manufacturing": {
+            "steps": [ { "title": "String", "desc": "String", "risk": "high"|"medium"|"low" } ]
+        }
   },
   "simulation": {
       "base_stats": {
@@ -69,7 +91,13 @@ Output ONLY valid JSON matching this schema:
           "protein_g": number,
           "carbs_g": number,
           "fat_g": number,
+          "magnesium_mg": number,
+          "potassium_mg": number,
           "ingredients": ["Main", "Ingredients", "List"]
+      },
+      "additives": {
+          "is_clean": boolean,
+          "detected": ["names"]
       },
       "modifiers": [
           {
@@ -82,7 +110,7 @@ Output ONLY valid JSON matching this schema:
                   "protein_g": number (optional),
                   "carbs_g": number (optional),
                   "fat_g": number (optional),
-                  "score_impact": number,
+                  "score_delta": number,
                   "remove_ingredients": ["Ingredient Name"] (optional)
               }
           }
@@ -104,23 +132,11 @@ Output ONLY valid JSON matching this schema:
     },
     { 
         "id": "summary", "zone": "zone_1", "type": "text_block", 
-        "data": { "headline": "Punchy Title" } 
-    },
-    { 
-        "id": "macros", "zone": "zone_2", "type": "stacked_bar", 
-        "data": { "segments": [{ "label": "Carbs"|"Fat"|"Protein", "unit": "g", "color": "purple"|"yellow"|"blue" }] } 
-    },
-    { 
-        "id": "sodium", "zone": "zone_3", "type": "equivalence_icon", 
-        "data": { "value": "e.g. 1500mg", "comparison_item": "e.g. Fries", "comparison_count": number } 
+        "data": { "headline": "Punchy Soundbite" } 
     },
     { 
         "id": "risks", "zone": "zone_3", "type": "red_flag_list", 
-        "data": { "flags": [{ "name": "Ingredient Name", "risk_level": "high"|"medium", "description": "Short reasoning" }] } 
-    },
-    { 
-        "id": "sim", "zone": "zone_4", "type": "interactive_simulator", 
-        "data": { "defaults": {} } 
+        "data": { "flags": [{ "name": "Title", "risk_level": "high"|"medium"|"low", "description": "Insight", "category": "macro"|"bio"|"micro" }] } 
     }
   ]
 }`
@@ -136,12 +152,21 @@ Output ONLY valid JSON matching this schema:
             max_tokens: 2048
         });
 
-        const content = completion.choices[0]?.message?.content;
+        let content = completion.choices[0]?.message?.content;
         if (!content) {
             throw new Error("No content received from Groq");
         }
 
-        const jsonResponse = JSON.parse(content);
+        // Sanitize content: Remove markdown code fences if present
+        content = content.replace(/```json\n?|```/g, "").trim();
+
+        let jsonResponse;
+        try {
+            jsonResponse = JSON.parse(content);
+        } catch (parseError) {
+            console.error("JSON Parse Error:", parseError, "Content:", content);
+            throw new Error("Failed to parse LLM response as JSON");
+        }
         return NextResponse.json(jsonResponse);
 
     } catch (error: any) {
