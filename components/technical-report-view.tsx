@@ -1,0 +1,102 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { Terminal, ShieldAlert, CheckCircle2, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface TechnicalReportProps {
+    data: {
+        productName: string;
+        userContext: string;
+        compatibilityScore: number; // 0-100
+        agentNotes: string;
+    };
+}
+
+export function TechnicalReportView({ data }: TechnicalReportProps) {
+    // Determine Color Grade based on score
+    const color = data.compatibilityScore > 75 ? "emerald" : data.compatibilityScore > 40 ? "amber" : "red";
+    const statusText = data.compatibilityScore > 75 ? "COMPATIBLE" : data.compatibilityScore > 40 ? "CAUTION" : "CONFLICT";
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-4xl mx-auto mb-8 font-mono text-sm leading-relaxed"
+        >
+            <div className={cn("border bg-black/80 backdrop-blur-xl p-6 relative overflow-hidden",
+                `border-${color}-500/30`
+            )}>
+                {/* Decorative Scanlines */}
+                <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+                    <div className="flex items-center gap-3">
+                        <Terminal className={cn("w-5 h-5", `text-${color}-500`)} />
+                        <div>
+                            <h2 className="text-white font-bold tracking-widest uppercase text-base"># CIPHER: Technical Report</h2>
+                            <p className="text-xs text-muted-foreground">REF: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+                        </div>
+                    </div>
+                    <div className={cn("px-3 py-1 border rounded text-xs font-bold tracking-widest",
+                        `border-${color}-500/50 text-${color}-500 bg-${color}-500/10`
+                    )}>
+                        STATUS: {statusText}
+                    </div>
+                </div>
+
+                {/* Grid Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-white/80">
+
+                    {/* Column 1: Metadata */}
+                    <div className="space-y-4">
+                        <div>
+                            <p className="text-[10px] uppercase text-muted-foreground/60 mb-1">Target Subject</p>
+                            <div className="text-lg font-bold text-white tracking-wide">{data.productName}</div>
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase text-muted-foreground/60 mb-1">User Parameter</p>
+                            <div className="text-sm border-l-2 border-white/20 pl-3 italic text-white/70">
+                                "{data.userContext}"
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Column 2: Score & Notes */}
+                    <div className="space-y-4">
+                        <div>
+                            <p className="text-[10px] uppercase text-muted-foreground/60 mb-1">Compatibility Matrix</p>
+                            <div className="flex items-center gap-4">
+                                <div className="text-3xl font-black">{data.compatibilityScore}%</div>
+                                <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${data.compatibilityScore}%` }}
+                                        transition={{ duration: 1, delay: 0.2 }}
+                                        className={cn("h-full", `bg-${color}-500`)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="text-[10px] uppercase text-muted-foreground/60 mb-1">Agent Notes</p>
+                            <div className={cn("bg-white/5 p-3 rounded text-xs border border-white/5",
+                                `text-${color}-200`
+                            )}>
+                                {data.agentNotes}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-6 pt-4 border-t border-white/5 flex justify-between text-[10px] text-muted-foreground/40 uppercase">
+                    <span>Generated by Llama-3-70b</span>
+                    <span>Confidential Integration</span>
+                </div>
+            </div>
+        </motion.div>
+    );
+}
