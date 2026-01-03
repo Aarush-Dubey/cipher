@@ -76,22 +76,12 @@ A cinematic, 90-second guided tour showcasing the platform's capabilities.
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/cipher.git
 
-# Navigate to project
+git clone https://github.com/Aarush-Dubey/cipher.git
 cd cipher
-
-# Install dependencies
 npm install
-
-# Create environment file
 cp .env.example .env
-
-# Add your Groq API key to .env
 echo "GROQ_API_KEY=your_api_key_here" >> .env
-
-# Start development server
 npm run dev
 ```
 
