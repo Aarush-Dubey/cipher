@@ -364,6 +364,51 @@ import { HealthIntelligenceDashboard } from "@/components/health-intelligence-da
 import { useUserProfile } from "@/context/user-profile-context";
 import { ConflictGuard } from "@/components/bio-sync-drawer";
 
+// --- Zone 6: Optimization Protocol Card ---
+function OptimizationCard({ data }: { data: any }) {
+    if (!data) return null;
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full bg-[#0A0A0F]/90 backdrop-blur-xl border border-emerald-500/20 rounded-[2rem] p-8 shadow-[0_0_50px_-20px_rgba(16,185,129,0.2)]"
+        >
+            <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center">
+                    <Dna className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div>
+                    <h3 className="text-emerald-400 font-mono text-xs tracking-widest uppercase">Protocol Activated</h3>
+                    <h2 className="text-2xl text-white font-light">Optimize for <span className="font-bold text-white">{data.goal}</span></h2>
+                </div>
+                <div className="ml-auto text-right">
+                    <div className="text-xs text-white/40 uppercase tracking-widest">Projected Score</div>
+                    <div className="text-4xl font-bold text-emerald-400">{data.projected_score}</div>
+                </div>
+            </div>
+
+            <div className="space-y-4">
+                {data.actions?.map((action: any, i: number) => (
+                    <div key={i} className="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-colors">
+                        <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-sm font-bold">
+                            {i + 1}
+                        </div>
+                        <div className="flex-1">
+                            <h4 className="text-white font-medium">{action.label}</h4>
+                            <p className="text-emerald-400/80 text-xs font-mono mt-1">{action.impact_desc}</p>
+                        </div>
+                        <CheckCircle className="w-5 h-5 text-white/20" />
+                    </div>
+                ))}
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-white/10 text-center">
+                <p className="text-white/40 text-sm italic">"Implementing these modifications will align the product with your biological targets."</p>
+            </div>
+        </motion.div>
+    );
+}
+
 export function GenerativeResult({ query, userContext, onReset, onAnalysisComplete }: { query: string; userContext?: string; onReset: () => void; onAnalysisComplete?: (note: string) => void }) {
     const [messages, setMessages] = useState<MessageItem[]>([]);
     const [input, setInput] = useState("");
@@ -477,6 +522,13 @@ export function GenerativeResult({ query, userContext, onReset, onAnalysisComple
                     type: 'manufacturing',
                     data: rawData.follow_up_data.manufacturing
                 }]);
+            } else if (rawData.follow_up_data?.type === 'optimization') {
+                setMessages(prev => [...prev, {
+                    id: (Date.now() + 1).toString(),
+                    role: 'ai',
+                    type: 'optimization',
+                    data: rawData.follow_up_data.optimization
+                }]);
             } else {
                 // Default to text response (extracting headline or summary)
                 const summary = rawData.components?.find((c: any) => c.id === 'summary')?.data?.headline
@@ -514,6 +566,10 @@ export function GenerativeResult({ query, userContext, onReset, onAnalysisComple
                     ) : msg.type === 'battle' ? (
                         <div className="w-full relative">
                             <BattleCard data={msg.data} />
+                        </div>
+                    ) : msg.type === 'optimization' ? (
+                        <div className="w-full relative">
+                            <OptimizationCard data={msg.data} />
                         </div>
                     ) : (
                         <div className={cn(

@@ -54,12 +54,17 @@ CRITICAL: Bias the health score and risks heavily based on this context.
    - Calculate the QUANTITATIVE IMPACT of each hack (e.g. sodium_mg: -800).
    - Write 3 "Verdict" states: Default (Bad), Improved (Okay), Optimized (Great).
 
+
 4. If the user's query asks for a comparison (e.g., "Battle Mode", "vs", "Compare") OR implies a need for alternatives:
    - If a competitor is named, use it.
    - If NO competitor is named, AUTO-GENERATE a "Healthier Alternative" (e.g., "Zucchini Noodles" vs "Ramen") to compare against.
    - Populate the "follow_up_data.battle" field.
 5. If the user's query asks about Manufacturing/Process ("How is it made?"), populate "follow_up_data.manufacturing".
-6. Otherwise, set "follow_up_data.type" to null.
+6. If the user's query asks to OPTIMIZE/IMPROVE ("Optimize for Muscle Gain"):
+   - Populate "follow_up_data.optimization".
+   - Define 3 concrete, actionable steps to improve the product's score for that goal.
+7. Otherwise, set "follow_up_data.type" to null.
+
 
 
 Output ONLY valid JSON matching this schema:
@@ -78,7 +83,7 @@ Output ONLY valid JSON matching this schema:
       "energy": number
   },
   "follow_up_data": {
-        "type": "battle" | "manufacturing" | null,
+        "type": "battle" | "manufacturing" | "optimization" | null,
         "battle": {
             "productA": { "name": "String", "protein": "String", "sodium": "String" },
             "productB": { "name": "String", "protein": "String", "sodium": "String" },
@@ -86,6 +91,11 @@ Output ONLY valid JSON matching this schema:
         },
         "manufacturing": {
             "steps": [ { "title": "String", "desc": "String", "risk": "high"|"medium"|"low" } ]
+        },
+        "optimization": {
+            "goal": "String",
+            "actions": [ { "icon": "String", "label": "String", "impact_desc": "String" } ],
+            "projected_score": number
         }
   },
   "simulation": {
