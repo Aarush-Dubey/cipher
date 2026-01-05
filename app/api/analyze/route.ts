@@ -38,7 +38,7 @@ export async function POST(req: Request) {
         }
 
         const completion = await client.chat.completions.create({
-            model: "mixtral-8x7b-32768",
+            model: "llama-3.3-70b-versatile",
             messages: [
                 {
                     role: "system",
