@@ -476,6 +476,13 @@ export function GenerativeResult({ query, userContext, onReset, onAnalysisComple
         if (messages.length === 0) generateDashboard();
     }, [query, userContext, profile, messages.length]);
 
+    // Auto-scroll to bottom on new messages
+    useEffect(() => {
+        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+
+
     // Handle Follow-up Chat
     const handleSend = async (forcedInput?: string) => {
         const inputText = forcedInput || input;
@@ -561,7 +568,7 @@ export function GenerativeResult({ query, userContext, onReset, onAnalysisComple
                     {msg.type === 'dashboard' ? (
                         <DashboardCard data={msg.data} minimized={idx < messages.length - 1} />
                     ) : msg.type === 'manufacturing' ? (
-                        <div className="w-full h-[600px] relative">
+                        <div className="w-full relative">
                             <ManufacturingTimeline data={msg.data} />
                         </div>
                     ) : msg.type === 'battle' ? (
@@ -588,6 +595,7 @@ export function GenerativeResult({ query, userContext, onReset, onAnalysisComple
                     <BrainCircuit className="w-4 h-4" /> Calculating biological impact...
                 </div>
             )}
+            <div ref={scrollRef} />
 
             {/* Sticky Bottom Input Bar & Chips */}
             <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent z-50">
