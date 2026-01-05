@@ -415,9 +415,9 @@ export function GenerativeResult({ query, userContext, onReset, onAnalysisComple
                         { icon: "Scale", title: "Balance Check", description: "Macronutrient ratio appears balanced in this simulation.", type: "warning" }
                     ],
                     simulation: {
-                        base_stats: { score: 72, calories: 250, sodium_mg: 400, protein_g: 15, carbs_g: 30, fat_g: 8, magnesium_mg: 40, potassium_mg: 150 },
+                        base_stats: { score: 72, calories: 250, sodium_mg: 400, protein_g: 15, carbs_g: 30, fat_g: 8, magnesium_mg: 40, potassium_mg: 150, ingredients: ["Simulated Protein", "Virtual Fiber"] },
                         modifiers: [
-                            { id: "mod1", label: "Theoretical Optimization", active: false, impact: { score_delta: 10, protein_g: 5 } }
+                            { id: "mod1", label: "Theoretical Optimization", type: "addition", impact: { score_delta: 10, protein_g: 5 } }
                         ],
                         verdicts: { default: "Simulated", improved: "Optimized", optimized: "Ideal" }
                     },
@@ -513,7 +513,7 @@ export function GenerativeResult({ query, userContext, onReset, onAnalysisComple
                         </div>
                     ) : msg.type === 'battle' ? (
                         <div className="w-full relative">
-                            <BattleCard />
+                            <BattleCard data={msg.data} />
                         </div>
                     ) : (
                         <div className={cn(

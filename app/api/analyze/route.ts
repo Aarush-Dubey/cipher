@@ -53,9 +53,14 @@ CRITICAL: Bias the health score and risks heavily based on this context.
    - Create 3 realistic "Hacks/Modifiers" that specificially address the product's flaws (e.g. "Drain Noodles" to reduce Fat, "Add Spinach" to add Fiber).
    - Calculate the QUANTITATIVE IMPACT of each hack (e.g. sodium_mg: -800).
    - Write 3 "Verdict" states: Default (Bad), Improved (Okay), Optimized (Great).
-4. If the user's query explicitly asks for a comparison between two products (e.g., "Product A vs Product B"), populate the "follow_up_data.battle" field.
-5. If the user's query explicitly asks about the manufacturing process or how a product is made (e.g., "How is X made?", "Manufacturing process of Y"), populate the "follow_up_data.manufacturing" field.
-6. Otherwise, set "follow_up_data.type" to null and leave "battle" and "manufacturing" empty.
+
+4. If the user's query asks for a comparison (e.g., "Battle Mode", "vs", "Compare") OR implies a need for alternatives:
+   - If a competitor is named, use it.
+   - If NO competitor is named, AUTO-GENERATE a "Healthier Alternative" (e.g., "Zucchini Noodles" vs "Ramen") to compare against.
+   - Populate the "follow_up_data.battle" field.
+5. If the user's query asks about Manufacturing/Process ("How is it made?"), populate "follow_up_data.manufacturing".
+6. Otherwise, set "follow_up_data.type" to null.
+
 
 Output ONLY valid JSON matching this schema:
 {
