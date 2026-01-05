@@ -592,18 +592,7 @@ export function GenerativeResult({ query, userContext, onReset, onAnalysisComple
             {/* Sticky Bottom Input Bar & Chips */}
             <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent z-50">
                 <div className="max-w-3xl mx-auto flex flex-col gap-3">
-                    {/* Quick Chips */}
-                    <div className="flex items-center justify-end gap-2 overflow-x-auto no-scrollbar px-1">
-                        <button onClick={() => handleSend("Show Manufacturing Process")} className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full text-[#D4AF37] text-xs hover:bg-[#D4AF37]/20 transition-all text-nowrap">
-                            <Microscope className="w-3 h-3" /> Manufacturing Process
-                        </button>
-                        <button onClick={() => handleSend("Compare vs. Alternative / Battle")} className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full text-[#D4AF37] text-xs hover:bg-[#D4AF37]/20 transition-all text-nowrap">
-                            <Swords className="w-3 h-3" /> Battle Mode
-                        </button>
-                        <button onClick={() => handleSend("Optimize this for Muscle Gain")} className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full text-[#D4AF37] text-xs hover:bg-[#D4AF37]/20 transition-all text-nowrap">
-                            <Dna className="w-3 h-3" /> Optimize
-                        </button>
-                    </div>
+
 
                     {/* Input Area */}
                     <div className="relative flex gap-2 w-full">
