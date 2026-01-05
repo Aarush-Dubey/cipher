@@ -11,7 +11,7 @@
 [![Groq](https://img.shields.io/badge/Groq-Llama%203-orange?style=flat-square)](https://groq.com/)
 [![Dynamic UI](https://img.shields.io/badge/UI-Polymorphic-purple?style=flat-square)]()
 
-[Live Demo](#royal-autopilot-demo) · [Presentation (PDF)](./presentation.pdf) · [Features](#features) · [Architecture](#architecture)
+
 
 </div>
 
