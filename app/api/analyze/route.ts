@@ -85,9 +85,9 @@ Output ONLY valid JSON matching this schema:
   "follow_up_data": {
         "type": "battle" | "manufacturing" | "optimization" | null,
         "battle": {
-            "productA": { "name": "String", "protein": "String", "sodium": "String" },
-            "productB": { "name": "String", "protein": "String", "sodium": "String" },
-            "verdict": "String"
+            "productA": { "name": "String", "protein": "String", "sodium": "String", "calories": "String", "fat": "String", "carbs": "String" },
+            "productB": { "name": "String", "protein": "String", "sodium": "String", "calories": "String", "fat": "String", "carbs": "String" },
+            "verdict": "String (Punchy, marketing-style winner announcement)"
         },
         "manufacturing": {
             "steps": [ { "title": "String", "desc": "String", "risk": "high"|"medium"|"low" } ]
