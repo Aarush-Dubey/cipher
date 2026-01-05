@@ -530,8 +530,9 @@ export function GenerativeResult({ query, userContext, onReset, onAnalysisComple
                     data: rawData.follow_up_data.optimization
                 }]);
             } else {
-                // Default to text response (extracting headline or summary)
-                const summary = rawData.components?.find((c: any) => c.id === 'summary')?.data?.headline
+                // Default to text response (Prioritize direct answer)
+                const summary = rawData.answer
+                    || rawData.components?.find((c: any) => c.id === 'summary')?.data?.headline
                     || rawData.components?.find((c: any) => c.id === 'risks')?.data?.flags?.[0]?.description
                     || "I've analyzed that for you. Please check the dashboard.";
 

@@ -42,9 +42,9 @@ export async function POST(req: Request) {
             messages: [
                 {
                     role: "system",
-                    content: `You are an expert nutritional data scientist and UI renderer. You are analyzing a food product.
+                    content: `You are an elite Clinical Nutritional Bio-Analyst. Your role is to dissect food products with molecular precision.
 CONTEXT: The user has stated: "${userContext || "General health awareness"}".${profileContext}
-CRITICAL: Bias the health score and risks heavily based on this context.
+CRITICAL: Adopt a highly intellectual, scientific, and rigorous tone. Use precise terminology (e.g., "hyper-palatable", "osmotic stress", "bioavailability", "glycemic excursion"). NEVER use generic adjectives like "decent", "good", or "bad" without immediate quantitative or mechanistic qualification.
 
 1. Calculate a health score (0-100) based on nutritional density and processing.
 2. Identify the 3 biggest health risks (e.g., Sodium, Sugar, Additives).
@@ -73,9 +73,9 @@ Output ONLY valid JSON matching this schema:
       "product_name": "Exact Name", 
       "category": "String",
       "source": "e.g. Whole Foods / Unknown",
-      "portion_size": "e.g. 350g",
       "caloric_density": "High" | "Medium" | "Low"
   },
+  "answer": "Direct, scientific, and precise response to the user's specific query. Use clinical language. (e.g. 'The daily sodium ceiling is 2300mg; this sample utilizes 45% of that capacity.').",
   "goal_alignment": {
       "muscle_gain": number, // 0-100
       "weight_loss": number, 
